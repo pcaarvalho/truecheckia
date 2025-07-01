@@ -69,7 +69,7 @@ const LandingPage = () => {
     },
     {
       icon: Zap,
-      title: 'Velocidade Lightning',
+      title: 'Velocidade Relâmpago',
       description: 'Análise em tempo real com resultados instantâneos para qualquer tipo de conteúdo.',
       gradient: 'from-yellow-500 to-orange-500',
       details: ['< 15 segundos', 'Processamento paralelo', 'API otimizada']
@@ -79,7 +79,7 @@ const LandingPage = () => {
       title: 'Segurança Total',
       description: 'Criptografia end-to-end e política de zero logs para máxima privacidade.',
       gradient: 'from-green-500 to-emerald-500',
-      details: ['Criptografia AES-256', 'Zero logs', 'GDPR compliant']
+      details: ['Criptografia AES-256', 'Zero logs', 'Conformidade com GDPR']
     },
     {
       icon: Globe,
@@ -161,8 +161,8 @@ const LandingPage = () => {
 
   const pricingPlans = [
     {
-      name: 'Starter',
-      price: 'R$ 99',
+      name: 'Básico',
+      price: 'R$ 29,99',
       period: '/mês',
       description: 'Perfeito para pequenas equipes',
       features: [
@@ -175,8 +175,8 @@ const LandingPage = () => {
       gradient: 'from-gray-500 to-gray-600'
     },
     {
-      name: 'Professional',
-      price: 'R$ 299',
+      name: 'Profissional',
+      price: 'R$ 59,99',
       period: '/mês',
       description: 'Ideal para empresas em crescimento',
       features: [
@@ -190,7 +190,7 @@ const LandingPage = () => {
       gradient: 'from-blue-500 to-purple-600'
     },
     {
-      name: 'Enterprise',
+      name: 'Corporativo',
       price: 'Sob consulta',
       period: '',
       description: 'Para grandes organizações',
@@ -367,7 +367,7 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* Seção de Recursos */}
       <section id="features" className="py-20 bg-slate-800/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -406,7 +406,7 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Use Cases Section */}
+      {/* Seção de Casos de Uso */}
       <section id="use-cases" className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -447,7 +447,7 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Testimonials Section */}
+      {/* Seção de Depoimentos */}
       <section id="testimonials" className="py-20 bg-slate-800/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -484,7 +484,7 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Pricing Section */}
+      {/* Seção de Preços */}
       <section id="pricing" className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -544,7 +544,7 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Contact Section */}
+      {/* Seção de Contato */}
       <section id="contact" className="py-20 bg-slate-800/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
