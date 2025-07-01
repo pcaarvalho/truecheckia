@@ -1,0 +1,1 @@
+{"version":3,"file":"videoAnalyzer.d.ts","sourceRoot":"","sources":["../../src/utils/videoAnalyzer.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,oBAAoB,EAAE,MAAM,0BAA0B,CAAC;AAEhE,qBAAa,aAAa;IACxB,MAAM,CAAC,2BAA2B,CAAC,OAAO,EAAE,MAAM,EAAE,QAAQ,CAAC,EAAE,MAAM,CAAC,MAAM,EAAE,GAAG,CAAC,GAAG,oBAAoB;IAiCzG,OAAO,CAAC,MAAM,CAAC,sBAAsB;CAsBtC"}
