@@ -39,9 +39,10 @@ export class AnthropicService {
   async analyzeText(textContent: string, title?: string): Promise<AnthropicAnalysisResult> {
     const startTime = Date.now();
     
-    // Se não há chave da API, usa análise mock
-    if (!this.apiKey || this.apiKey === 'your-anthropic-api-key-here') {
-      logger.warn('⚠️ Chave da API do Anthropic não configurada, usando análise mock');
+    // Se não há chave da API válida, usa análise mock
+    if (!this.apiKey || this.apiKey === 'your-anthropic-api-key-here' || this.apiKey === 'demo-key-for-testing' || this.apiKey.length < 10) {
+      logger.warn('⚠️ Chave da API do Anthropic não configurada ou inválida, usando análise mock');
+      logger.info('💡 Para usar análise real, configure ANTHROPIC_API_KEY no arquivo .env');
       return this.mockAnalysis(textContent, title, startTime);
     }
     

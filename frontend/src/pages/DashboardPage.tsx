@@ -17,6 +17,7 @@ import {
 import { useAuth } from '../contexts/AuthContext'
 import { useSocket } from '../contexts/SocketContext'
 import { authService } from '../services/api'
+import toast from 'react-hot-toast'
 
 interface AnalysisResult {
   message: string
@@ -64,16 +65,30 @@ export const DashboardPage = () => {
       setHistoryLoading(true)
       const response = await authService.get('/api/analysis?limit=10')
       setAnalyses(response.data.analyses || [])
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao carregar histórico:', error)
+      
+              // Mensagens de erro amigáveis para histórico
+        if (!navigator.onLine) {
+          toast.error('Sem conexão com a internet. Verifique sua rede.')
+        } else {
+          // Não mostra erro para histórico - apenas loga
+          console.warn('Não foi possível carregar o histórico')
+        }
     } finally {
       setHistoryLoading(false)
     }
   }
 
   const analyzeText = async () => {
-    if (!textContent.trim() || textContent.length < 10) {
-      alert('Digite pelo menos 10 caracteres para análise')
+    // Validação melhorada
+    if (!textContent.trim()) {
+      toast.error('Por favor, insira um texto para análise')
+      return
+    }
+    
+    if (textContent.trim().length < 50) {
+      toast.error('Por favor, insira pelo menos 50 caracteres para uma análise mais precisa')
       return
     }
 
@@ -87,13 +102,24 @@ export const DashboardPage = () => {
       })
 
       setAnalysisResult(response.data)
+      toast.success('Análise concluída com sucesso!')
       
       // Recarregar histórico
       await loadAnalysisHistory()
       
     } catch (error: any) {
       console.error('Erro na análise:', error)
-      alert(error.response?.data?.error || 'Erro ao analisar texto')
+      
+      // Mensagens de erro amigáveis com toast
+      if (!navigator.onLine) {
+        toast.error('Verifique sua conexão com a internet e tente novamente')
+      } else if (error.response?.status >= 500) {
+        toast.error('Estamos com alta demanda no momento. Tente novamente em alguns segundos')
+      } else if (error.response?.status === 429) {
+        toast.error('Muitas tentativas. Aguarde alguns minutos antes de tentar novamente')
+      } else {
+        toast.error('Não foi possível analisar o texto. Tente novamente em alguns segundos')
+      }
     } finally {
       setIsLoading(false)
     }
@@ -170,14 +196,12 @@ export const DashboardPage = () => {
         </button>
         <button
           onClick={() => setActiveTab('upload')}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-colors ${
-            activeTab === 'upload' 
-              ? 'bg-blue-600 text-white' 
-              : 'text-gray-400 hover:text-white hover:bg-slate-700'
-          }`}
+          disabled={true}
+          className="flex items-center space-x-2 px-4 py-2 rounded-md transition-colors text-gray-500 cursor-not-allowed bg-slate-700 opacity-50"
+          title="Funcionalidade em desenvolvimento"
         >
           <Upload size={18} />
-          <span>Upload Arquivo</span>
+          <span>Upload Arquivo (Em breve)</span>
         </button>
         <button
           onClick={() => setActiveTab('history')}
@@ -226,17 +250,22 @@ export const DashboardPage = () => {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Texto para Análise (mín. 10 caracteres)
+                    Texto para Análise (mínimo 50 caracteres recomendado)
                   </label>
                   <textarea
                     value={textContent}
                     onChange={(e) => setTextContent(e.target.value)}
-                    placeholder="Cole aqui o texto que deseja analisar..."
+                    placeholder="Cole aqui o texto que deseja analisar... (mínimo 50 caracteres para melhor precisão)"
                     className="w-full h-40 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
                     maxLength={50000}
                   />
-                  <div className="text-xs text-gray-400 mt-1">
-                    {textContent.length}/50000 caracteres
+                  <div className="text-xs mt-1 flex justify-between">
+                    <span className={textContent.length < 50 ? 'text-yellow-400' : 'text-gray-400'}>
+                      {textContent.length}/50000 caracteres
+                    </span>
+                    {textContent.length < 50 && textContent.length > 0 && (
+                      <span className="text-yellow-400">Recomendamos pelo menos 50 caracteres</span>
+                    )}
                   </div>
                 </div>
                 
@@ -249,7 +278,12 @@ export const DashboardPage = () => {
                     {isLoading ? (
                       <>
                         <Activity size={18} className="mr-2 animate-spin" />
-                        Analisando...
+                        Analisando texto...
+                      </>
+                    ) : textContent.length < 10 ? (
+                      <>
+                        <Zap size={18} className="mr-2" />
+                        Digite pelo menos 10 caracteres
                       </>
                     ) : (
                       <>
@@ -337,19 +371,26 @@ export const DashboardPage = () => {
           </div>
         )}
 
-        {/* Upload de Arquivo */}
+        {/* Upload de Arquivo - DESABILITADO */}
         {activeTab === 'upload' && (
-          <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-            <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-              <Upload className="mr-2 text-purple-400" size={24} />
-              Upload de Arquivo
+          <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 opacity-75">
+            <h2 className="text-xl font-semibold text-gray-400 mb-4 flex items-center">
+              <Upload className="mr-2 text-gray-500" size={24} />
+              Upload de Arquivo - Em Desenvolvimento
             </h2>
-            <div className="text-center py-12">
-              <Upload size={64} className="mx-auto text-gray-500 mb-4" />
-              <p className="text-gray-400 mb-2">Funcionalidade em desenvolvimento</p>
-              <p className="text-sm text-gray-500">
-                Em breve você poderá fazer upload de documentos, imagens e vídeos para análise
+            <div className="text-center py-12 border-2 border-dashed border-gray-600 rounded-lg">
+              <Upload size={64} className="mx-auto text-gray-600 mb-4" />
+              <p className="text-gray-500 mb-2 font-medium">🚧 Funcionalidade Temporariamente Desabilitada</p>
+              <p className="text-sm text-gray-600 mb-4">
+                Por favor, use a análise de texto por enquanto.<br/>
+                O upload de arquivos será habilitado em breve.
               </p>
+              <button
+                onClick={() => setActiveTab('analyze')}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                Ir para Análise de Texto
+              </button>
             </div>
           </div>
         )}

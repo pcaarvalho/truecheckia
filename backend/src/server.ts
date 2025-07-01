@@ -38,7 +38,7 @@ import { analysisRoutes } from './routes/analysis';
 import { userRoutes } from './routes/user';
 import { reportRoutes } from './routes/reports';
 import { adminRoutes } from './routes/admin';
-import { healthRoutes } from './routes/health';
+import healthRoutes from './routes/health';
 
 // Configuração Swagger
 const swaggerOptions = {
@@ -84,7 +84,7 @@ class Server {
     this.server = http.createServer(this.app);
     this.io = new SocketIOServer(this.server, {
   cors: {
-        origin: process.env.FRONTEND_URL || "http://localhost:3000",
+        origin: process.env['FRONTEND_URL'] || "http://localhost:5173",
         methods: ["GET", "POST"],
         credentials: true
       },
@@ -157,7 +157,7 @@ class Server {
         const allowedOrigins = [
           'http://localhost:3000',
           'http://localhost:5173',
-          process.env.FRONTEND_URL
+          process.env['FRONTEND_URL']
         ].filter(Boolean);
 
         if (!origin || allowedOrigins.includes(origin)) {
