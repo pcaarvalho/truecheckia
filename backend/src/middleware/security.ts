@@ -53,11 +53,15 @@ export const createRateLimit = (windowMs: number, max: number, message?: string)
       const userAgent = req.get('User-Agent') || 'unknown';
       return `${ip}:${userAgent.substring(0, 50)}`;
     },
-    onLimitReached: (req) => {
+    handler: (req, res) => {
       logger.warn('Rate limit exceeded', {
         ip: req.ip,
         url: req.url,
         userAgent: req.get('User-Agent')
+      });
+      res.status(429).json({
+        error: message || 'Muitas tentativas. Tente novamente mais tarde.',
+        retryAfter: Math.ceil(windowMs / 1000)
       });
     }
   });

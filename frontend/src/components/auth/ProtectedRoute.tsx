@@ -1,4 +1,4 @@
-import { Outlet, Navigate } from 'react-router-dom'
+import { Outlet, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 
 interface ProtectedRouteProps {
@@ -7,6 +7,7 @@ interface ProtectedRouteProps {
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ requireAdmin = false }) => {
   const { user, loading } = useAuth()
+  const location = useLocation()
 
   if (loading) {
     return (
@@ -25,6 +26,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ requireAdmin = f
 
   if (requireAdmin && user.role !== 'ADMIN') {
     return <Navigate to="/dashboard" replace />
+  }
+
+  // Se o usuário precisa selecionar um plano e não está na página de seleção
+  if (user.requiresPlanSelection && location.pathname !== '/select-plan') {
+    return <Navigate to="/select-plan" replace />
   }
 
   return <Outlet />

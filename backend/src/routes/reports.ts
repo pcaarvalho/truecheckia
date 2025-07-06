@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { prisma } from '../config/database';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateToken, requireActivePlan, checkPlanLimits, incrementPlanUsage } from '../middleware/auth';
 import { logger } from '../utils/logger';
 import { Request, Response, NextFunction } from 'express';
 
@@ -87,12 +87,17 @@ router.get('/:id', authenticateToken, async (req: Request, res: Response, next: 
 });
 
 // Criar novo relatório
-router.post('/', authenticateToken, [
-  body('analysisId').isUUID(),
-  body('title').trim().isLength({ min: 1, max: 200 }),
-  body('description').optional().trim().isLength({ max: 1000 }),
-  body('type').isIn(['DETAILED', 'SUMMARY', 'EXECUTIVE'])
-], async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', 
+  authenticateToken,
+  requireActivePlan,
+  checkPlanLimits('reports'),
+  [
+    body('analysisId').isUUID(),
+    body('title').trim().isLength({ min: 1, max: 200 }),
+    body('description').optional().trim().isLength({ max: 1000 }),
+    body('type').isIn(['DETAILED', 'SUMMARY', 'EXECUTIVE'])
+  ], 
+  async (req: Request, res: Response, next: NextFunction) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -147,6 +152,9 @@ router.post('/', authenticateToken, [
         }
       }
     });
+
+    // Incrementa o contador de uso do plano
+    await incrementPlanUsage(userId, 'reports');
 
     logger.info(`Relatório criado: ${report.id} para análise ${analysisId}`);
 

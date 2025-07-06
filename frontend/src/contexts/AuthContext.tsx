@@ -9,6 +9,7 @@ interface User {
   name: string;
   role: string;
   plan?: any;
+  requiresPlanSelection?: boolean;
 }
 
 interface AuthContextType {
@@ -94,7 +95,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(user);
 
       toast.success('Login realizado com sucesso!');
-      navigate('/dashboard');
+      
+      // Verifica se o usuário precisa selecionar um plano
+      if (user.requiresPlanSelection) {
+        navigate('/select-plan');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (error: any) {
       console.error('❌ Erro no login:', error);
       
@@ -136,8 +143,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('refreshToken', refreshToken);
       setUser(user);
 
-      toast.success('Conta criada com sucesso!');
-      navigate('/dashboard');
+      toast.success(response.data.message || 'Conta criada com sucesso!');
+      
+      // Usuários novos sempre precisam selecionar um plano
+      navigate('/select-plan');
     } catch (error: any) {
       console.error('❌ Erro no registro:', error);
       

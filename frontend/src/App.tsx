@@ -8,6 +8,8 @@ import LandingPage from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { DashboardPage } from './pages/DashboardPage';
+import SelectPlan from './pages/SelectPlan';
+import Subscription from './pages/Subscription';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Layout } from './components/layout/Layout';
 
@@ -51,10 +53,16 @@ function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
                 
+                {/* Protected routes without Layout */}
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/select-plan" element={<SelectPlan />} />
+                </Route>
+                
                 {/* Protected routes with Layout */}
                 <Route element={<ProtectedRoute />}>
                   <Route element={<Layout />}>
                     <Route path="/dashboard" element={<DashboardPage />} />
+                    <Route path="/subscription" element={<Subscription />} />
                     {/* Add more protected routes here */}
                   </Route>
                 </Route>

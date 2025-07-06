@@ -41,19 +41,12 @@ router.post('/register', [
     // Hash da senha
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Cria o usuário
+    // Cria o usuário sem plano (deve escolher após o cadastro)
     const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
-        name,
-        userPlan: {
-          create: {
-            planType: 'FREE',
-            maxAnalyses: 10,
-            maxFileSize: 10
-          }
-        }
+        name
       },
       select: {
         id: true,
@@ -94,10 +87,12 @@ router.post('/register', [
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role
+        role: user.role,
+        requiresPlanSelection: true
       },
       accessToken,
-      refreshToken
+      refreshToken,
+      message: 'Cadastro realizado com sucesso! Escolha um plano para começar.'
     });
   } catch (error) {
     logger.error('Erro no registro:', error);
@@ -127,7 +122,13 @@ router.post('/login', [
     // Busca o usuário
     const user = await prisma.user.findUnique({
       where: { email },
-      include: { userPlan: true }
+      include: { 
+        userPlan: {
+          include: {
+            plan: true
+          }
+        }
+      }
     });
 
     if (!user) {
@@ -178,7 +179,12 @@ router.post('/login', [
         email: user.email,
         name: user.name,
         role: user.role,
-        plan: user.userPlan
+        plan: user.userPlan ? {
+          ...user.userPlan,
+          plan: user.userPlan.plan,
+          requiresPlanSelection: false
+        } : null,
+        requiresPlanSelection: !user.userPlan
       },
       accessToken,
       refreshToken
@@ -271,7 +277,11 @@ router.get('/me', authenticateToken, async (req: Request, res: Response, next: N
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
-        userPlan: true
+        userPlan: {
+          include: {
+            plan: true
+          }
+        }
       }
     });
 
@@ -292,7 +302,12 @@ router.get('/me', authenticateToken, async (req: Request, res: Response, next: N
         email: user.email,
         name: user.name,
         role: user.role,
-        plan: user.userPlan
+        plan: user.userPlan ? {
+          ...user.userPlan,
+          plan: user.userPlan.plan,
+          requiresPlanSelection: false
+        } : null,
+        requiresPlanSelection: !user.userPlan
       }
     });
   } catch (error) {

@@ -21,25 +21,82 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Relacionamentos
-  analyses    Analysis[]
-  reports     Report[]
-  apiKeys     ApiKey[]
-  userPlan    UserPlan?
-  usageLogs   UsageLog[]
+  analyses      Analysis[]
+  reports       Report[]
+  apiKeys       ApiKey[]
+  userPlan      UserPlan?
+  usageLogs     UsageLog[]
+  subscriptions Subscription[]
+}
+
+model Plan {
+  id            String    @id @default(cuid())
+  name          String    @unique // FREE, STARTER, PRO, ENTERPRISE
+  displayName   String    // Nome para exibição
+  description   String
+  price         Float     // Preço mensal
+  currency      String    @default("BRL")
+  maxAnalyses   Int       // Análises por mês
+  maxFileSize   Int       // em MB
+  maxVideoLength Int      // em minutos
+  maxReports    Int       // Relatórios por mês
+  features      String    // JSON com recursos
+  isActive      Boolean   @default(true)
+  sortOrder     Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relacionamentos
+  userPlans     UserPlan[]
+  subscriptions Subscription[]
 }
 
 model UserPlan {
-  id          String   @id @default(cuid())
-  userId      String   @unique
-  planType    String   // FREE, BASIC, PRO, ENTERPRISE
-  maxAnalyses Int
-  maxFileSize Int // em MB
-  expiresAt   DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  planId            String
+  planType          String    // Cache do nome do plano
+  status            String    @default("ACTIVE") // ACTIVE, TRIAL, EXPIRED, CANCELLED
+  isTrialUsed       Boolean   @default(false)
+  trialEndsAt       DateTime? // Data de fim do trial
+  currentPeriodStart DateTime  @default(now())
+  currentPeriodEnd  DateTime? // Fim do período atual
+  analysesUsed      Int       @default(0) // Contador mensal
+  reportsUsed       Int       @default(0) // Contador mensal
+  lastResetDate     DateTime  @default(now()) // Última vez que os contadores foram zerados
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   // Relacionamentos
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan          Plan           @relation(fields: [planId], references: [id])
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id               String    @id @default(cuid())
+  userId           String
+  userPlanId       String
+  planId           String
+  status           String    // ACTIVE, CANCELLED, EXPIRED, PAST_DUE
+  paymentMethod    String?   // CREDIT_CARD, PIX, BOLETO
+  paymentProvider  String?   // STRIPE, MERCADOPAGO, etc
+  externalId       String?   // ID no provedor de pagamento
+  amount           Float
+  currency         String    @default("BRL")
+  interval         String    @default("MONTHLY") // MONTHLY, YEARLY
+  startDate        DateTime
+  endDate          DateTime?
+  cancelledAt      DateTime?
+  cancelReason     String?
+  metadata         String?   // JSON com dados adicionais
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Relacionamentos
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userPlan UserPlan @relation(fields: [userPlanId], references: [id])
+  plan     Plan     @relation(fields: [planId], references: [id])
 }
 
 model ApiKey {

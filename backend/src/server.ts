@@ -39,6 +39,7 @@ import { userRoutes } from './routes/user';
 import { reportRoutes } from './routes/reports';
 import { adminRoutes } from './routes/admin';
 import healthRoutes from './routes/health';
+import plansRoutes from './routes/plans';
 
 // Configuração Swagger
 const swaggerOptions = {
@@ -232,6 +233,7 @@ class Server {
     this.app.use('/api/user', userRoutes);
     this.app.use('/api/admin', adminRoutes);
     this.app.use('/api/reports', reportRoutes);
+    this.app.use('/api/plans', plansRoutes);
 
     // Rota 404
     this.app.use('*', (req, res) => {

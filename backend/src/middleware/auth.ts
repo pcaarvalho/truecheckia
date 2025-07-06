@@ -13,6 +13,7 @@ declare global {
   namespace Express {
     interface Request {
       user?: {
+        userId: string;
         id: string;
         email: string;
         role: string;
@@ -66,6 +67,7 @@ export const authenticateToken = async (
     }
 
     req.user = {
+      userId: user.id,
       id: user.id,
       email: user.email,
       role: user.role
@@ -178,7 +180,11 @@ export const requireActivePlan = async (req: Request, res: Response, next: NextF
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
       include: {
-        userPlan: true
+        userPlan: {
+          include: {
+            plan: true
+          }
+        }
       }
     });
 
@@ -186,19 +192,27 @@ export const requireActivePlan = async (req: Request, res: Response, next: NextF
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
 
-    // Se não tem plano, usa o plano FREE
+    // Se não tem plano, redireciona para seleção
     if (!user.userPlan) {
-      req.user = {
-        ...req.user,
-        plan: 'FREE'
-      };
-      return next();
+      return res.status(402).json({ 
+        error: 'Selecione um plano para continuar',
+        requiresPlanSelection: true
+      });
     }
 
-    // Verifica se o plano está ativo
-    if (user.userPlan.expiresAt && user.userPlan.expiresAt < new Date()) {
+    // Verifica status do plano
+    if (user.userPlan.status === 'EXPIRED' || user.userPlan.status === 'CANCELLED') {
       return res.status(403).json({ 
-        error: 'Plano expirado. Renove seu plano para continuar usando o serviço.' 
+        error: 'Plano expirado ou cancelado. Renove seu plano para continuar.',
+        requiresPlanRenewal: true
+      });
+    }
+
+    // Verifica trial expirado
+    if (user.userPlan.status === 'TRIAL' && user.userPlan.trialEndsAt && user.userPlan.trialEndsAt < new Date()) {
+      return res.status(402).json({ 
+        error: 'Período de trial expirado. Selecione um plano pago para continuar.',
+        trialExpired: true
       });
     }
 
@@ -214,55 +228,94 @@ export const requireActivePlan = async (req: Request, res: Response, next: NextF
   }
 };
 
-export const checkPlanLimits = (feature: 'analyses' | 'reports' | 'storage') => {
+export const checkPlanLimits = (feature: 'analyses' | 'reports' | 'fileSize' | 'videoLength') => {
   return async (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Autenticação necessária' });
     }
 
     try {
-      const user = await prisma.user.findUnique({
-        where: { id: req.user.id },
+      const userPlan = await prisma.userPlan.findUnique({
+        where: { userId: req.user.id },
         include: {
-          userPlan: true
+          plan: true
         }
       });
 
-      if (!user) {
-        return res.status(404).json({ error: 'Usuário não encontrado' });
+      if (!userPlan) {
+        return res.status(402).json({ 
+          error: 'Selecione um plano para continuar',
+          requiresPlanSelection: true
+        });
       }
 
-      const plan = user.userPlan;
-      if (!plan) {
-        // Plano FREE
-        const limits = {
-          analyses: 5,
-          reports: 3,
-          storage: 100 // MB
-        };
+      const plan = userPlan.plan;
 
-        const currentUsage = await getCurrentUsage(req.user.id, feature);
-        
-        if (currentUsage >= limits[feature]) {
-          return res.status(403).json({ 
-            error: `Limite do plano FREE atingido para ${feature}. Faça upgrade para continuar.`
-          });
-        }
-      } else {
-        // Verifica limites do plano pago
-        const limits = {
-          analyses: plan.maxAnalyses,
-          reports: 10, // Valor padrão para planos pagos
-          storage: plan.maxFileSize
-        };
+      // Verifica limites baseados no recurso
+      switch (feature) {
+        case 'analyses':
+          if (userPlan.analysesUsed >= plan.maxAnalyses) {
+            return res.status(403).json({ 
+              error: `Limite de análises do plano ${plan.displayName} atingido (${plan.maxAnalyses}/mês)`,
+              limit: plan.maxAnalyses,
+              used: userPlan.analysesUsed,
+              upgradeRequired: true
+            });
+          }
+          break;
 
-        const currentUsage = await getCurrentUsage(req.user.id, feature);
-        
-        if (currentUsage >= limits[feature]) {
-          return res.status(403).json({ 
-            error: `Limite do plano ${plan.planType} atingido para ${feature}. Faça upgrade para continuar.` 
-          });
-        }
+        case 'reports':
+          if (userPlan.reportsUsed >= plan.maxReports) {
+            return res.status(403).json({ 
+              error: `Limite de relatórios do plano ${plan.displayName} atingido (${plan.maxReports}/mês)`,
+              limit: plan.maxReports,
+              used: userPlan.reportsUsed,
+              upgradeRequired: true
+            });
+          }
+          break;
+
+        case 'fileSize':
+          // Verifica tamanho do arquivo no corpo da requisição
+          const fileSizeMB = req.file ? req.file.size / (1024 * 1024) : 0;
+          if (fileSizeMB > plan.maxFileSize) {
+            return res.status(403).json({ 
+              error: `Arquivo muito grande. Limite do plano ${plan.displayName}: ${plan.maxFileSize}MB`,
+              limit: plan.maxFileSize,
+              fileSize: fileSizeMB,
+              upgradeRequired: true
+            });
+          }
+          break;
+
+        case 'videoLength':
+          // Verifica duração do vídeo (seria implementado após análise do arquivo)
+          const videoLengthMinutes = req.body.videoLength || 0;
+          if (videoLengthMinutes > plan.maxVideoLength) {
+            return res.status(403).json({ 
+              error: `Vídeo muito longo. Limite do plano ${plan.displayName}: ${plan.maxVideoLength} minutos`,
+              limit: plan.maxVideoLength,
+              videoLength: videoLengthMinutes,
+              upgradeRequired: true
+            });
+          }
+          break;
+      }
+
+      // Verifica se precisa resetar contadores mensais
+      const now = new Date();
+      const lastReset = new Date(userPlan.lastResetDate);
+      const daysSinceReset = Math.floor((now.getTime() - lastReset.getTime()) / (1000 * 60 * 60 * 24));
+
+      if (daysSinceReset >= 30) {
+        await prisma.userPlan.update({
+          where: { id: userPlan.id },
+          data: {
+            analysesUsed: 0,
+            reportsUsed: 0,
+            lastResetDate: now
+          }
+        });
       }
 
       return next();
@@ -273,49 +326,27 @@ export const checkPlanLimits = (feature: 'analyses' | 'reports' | 'storage') => 
   };
 };
 
-async function getCurrentUsage(userId: string, feature: string): Promise<number> {
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+// Função auxiliar para incrementar uso de recursos
+export const incrementPlanUsage = async (userId: string, resource: 'analyses' | 'reports') => {
+  try {
+    const userPlan = await prisma.userPlan.findUnique({
+      where: { userId }
+    });
 
-  switch (feature) {
-    case 'analyses':
-      return await prisma.analysis.count({
-        where: {
-          userId,
-          createdAt: {
-            gte: startOfMonth
-          }
-        }
-      });
-    
-    case 'reports':
-      return await prisma.report.count({
-        where: {
-          userId,
-          createdAt: {
-            gte: startOfMonth
-          }
-        }
-      });
-    
-    case 'storage':
-      // Simula cálculo de armazenamento usado
-      const analyses = await prisma.analysis.findMany({
-        where: {
-          userId,
-          createdAt: {
-            gte: startOfMonth
-          }
-        },
-        select: {
-          id: true
-        }
-      });
-      
-      // Simula tamanho médio de 1MB por análise
-      return analyses.length * 1024 * 1024;
-    
-    default:
-      return 0;
+    if (!userPlan) {
+      console.warn(`UserPlan não encontrado para usuário ${userId}`);
+      return;
+    }
+
+    const updateData = resource === 'analyses' 
+      ? { analysesUsed: { increment: 1 } }
+      : { reportsUsed: { increment: 1 } };
+
+    await prisma.userPlan.update({
+      where: { userId },
+      data: updateData
+    });
+  } catch (error) {
+    console.error(`Erro ao incrementar uso de ${resource}:`, error);
   }
-}
+};

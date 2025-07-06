@@ -3,7 +3,7 @@ import multer from 'multer';
 import { body, validationResult } from 'express-validator';
 import { prisma } from '../config/database';
 import { minioClient, BUCKET_NAME } from '../config/minio';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateToken, requireActivePlan, checkPlanLimits, incrementPlanUsage } from '../middleware/auth';
 import { uploadLimiter } from '../middleware/rateLimiter';
 import { logger } from '../utils/logger';
 import { addToQueue } from '../services/queue';
@@ -79,11 +79,16 @@ const upload = multer({
  *       200:
  *         description: Análise concluída com sucesso
  */
-router.post('/text', authenticateToken, [
-  body('textContent').trim().isLength({ min: 10, max: 50000 }).withMessage('Texto deve ter entre 10 e 50000 caracteres'),
-  body('title').optional().trim().isLength({ min: 1, max: 200 }),
-  body('description').optional().trim().isLength({ max: 1000 })
-], async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/text', 
+  authenticateToken, 
+  requireActivePlan,
+  checkPlanLimits('analyses'),
+  [
+    body('textContent').trim().isLength({ min: 10, max: 50000 }).withMessage('Texto deve ter entre 10 e 50000 caracteres'),
+    body('title').optional().trim().isLength({ min: 1, max: 200 }),
+    body('description').optional().trim().isLength({ max: 1000 })
+  ], 
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -149,6 +154,9 @@ router.post('/text', authenticateToken, [
 
     logger.info(`✅ Análise direta concluída: ${analysis.id}`);
 
+    // Incrementa o contador de uso do plano
+    await incrementPlanUsage(userId, 'analyses');
+
     // Retorna o formato solicitado
     return res.status(200).json({
       message: analysisResult.message,
@@ -174,11 +182,16 @@ router.post('/text', authenticateToken, [
  *     security:
  *       - bearerAuth: []
  */
-router.post('/', authenticateToken, [
-  body('title').optional().trim().isLength({ min: 1, max: 200 }),
-  body('description').optional().trim().isLength({ max: 1000 }),
-  body('textContent').optional().trim().isLength({ min: 10, max: 50000 })
-], async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/', 
+  authenticateToken,
+  requireActivePlan,
+  checkPlanLimits('analyses'),
+  [
+    body('title').optional().trim().isLength({ min: 1, max: 200 }),
+    body('description').optional().trim().isLength({ max: 1000 }),
+    body('textContent').optional().trim().isLength({ min: 10, max: 50000 })
+  ], 
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -192,24 +205,6 @@ router.post('/', authenticateToken, [
     }
 
     const userId = req.user.id;
-
-    // Verifica limite do plano
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { userPlan: true }
-    });
-
-    if (!user?.userPlan) {
-      return res.status(400).json({ error: 'Plano não encontrado' });
-    }
-
-    const analysisCount = await prisma.analysis.count({
-      where: { userId }
-    });
-
-    if (analysisCount >= user.userPlan.maxAnalyses) {
-      return res.status(403).json({ error: 'Limite de análises atingido' });
-    }
 
     // Cria a análise
     const analysis = await prisma.analysis.create({
@@ -235,7 +230,10 @@ router.post('/', authenticateToken, [
       textContent: analysis.textContent
     });
 
-    logger.info(`Nova análise criada: ${analysis.id} por ${user.email}`);
+    // Incrementa o contador de uso do plano
+    await incrementPlanUsage(userId, 'analyses');
+
+    logger.info(`Nova análise criada: ${analysis.id} por ${req.user.email}`);
 
     return res.status(201).json(analysis);
   } catch (error) {
@@ -252,7 +250,14 @@ router.post('/', authenticateToken, [
  *     security:
  *       - bearerAuth: []
  */
-router.post('/upload', authenticateToken, uploadLimiter, upload.single('file'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/upload', 
+  authenticateToken, 
+  requireActivePlan,
+  checkPlanLimits('analyses'),
+  checkPlanLimits('fileSize'),
+  uploadLimiter, 
+  upload.single('file'), 
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Arquivo é obrigatório' });
@@ -271,22 +276,6 @@ router.post('/upload', authenticateToken, uploadLimiter, upload.single('file'), 
     const userId = req.user.id;
     const file = req.file;
 
-    // Verifica tamanho do arquivo
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { userPlan: true }
-    });
-
-    if (!user?.userPlan) {
-      return res.status(400).json({ error: 'Plano não encontrado' });
-    }
-
-    const fileSizeMB = file.size / (1024 * 1024);
-    if (fileSizeMB > user.userPlan.maxFileSize) {
-      return res.status(400).json({ 
-        error: `Arquivo muito grande. Máximo permitido: ${user.userPlan.maxFileSize}MB` 
-      });
-    }
 
     // Upload para MinIO
     const fileName = `${userId}/${Date.now()}-${file.originalname}`;
@@ -326,7 +315,10 @@ router.post('/upload', authenticateToken, uploadLimiter, upload.single('file'), 
       fileUrl: fileName
     });
 
-    logger.info(`Arquivo enviado: ${fileName} por ${user.email}`);
+    // Incrementa o contador de uso do plano
+    await incrementPlanUsage(userId, 'analyses');
+
+    logger.info(`Arquivo enviado: ${fileName} por ${req.user.email}`);
 
     return res.status(201).json(analysis);
   } catch (error) {
