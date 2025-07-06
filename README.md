@@ -1,60 +1,60 @@
-# TrueCheck AI - Detecção de Conteúdo Gerado por IA
+# TrueCheck AI - AI-Generated Content Detection
 
-Uma plataforma completa para detectar conteúdo gerado por inteligência artificial, incluindo textos, vídeos e imagens.
+A complete platform for detecting AI-generated content, including text, videos, and images.
 
-## 🚀 Funcionalidades
+## 🚀 Features
 
-- **Detecção Avançada**: Algoritmos de última geração para identificar conteúdo gerado por IA
-- **Múltiplos Formatos**: Suporte para texto, vídeo e imagem
-- **Análise em Tempo Real**: Resultados rápidos com processamento assíncrono
-- **Dashboard Interativo**: Interface moderna com gráficos e estatísticas
-- **API RESTful**: Integração fácil com outros sistemas
-- **WebSocket**: Atualizações em tempo real
-- **Sistema de Filas**: Processamento assíncrono e escalável
-- **Autenticação JWT**: Sistema seguro de login e registro
+- **Advanced Detection**: State-of-the-art algorithms to identify AI-generated content
+- **Multiple Formats**: Support for text, video, and image
+- **Real-time Analysis**: Fast results with asynchronous processing
+- **Interactive Dashboard**: Modern interface with charts and statistics
+- **RESTful API**: Easy integration with other systems
+- **WebSocket**: Real-time updates
+- **Queue System**: Asynchronous and scalable processing
+- **JWT Authentication**: Secure login and registration system
 
-## 🏗️ Arquitetura
+## 🏗️ Architecture
 
 ### Backend (Node.js + Express)
-- **API REST**: Endpoints para upload, análise e relatórios
-- **Autenticação**: JWT com refresh tokens
-- **Banco de Dados**: PostgreSQL com Prisma ORM
-- **Cache**: Redis para sessões e filas
-- **Filas**: Bull para processamento assíncrono
-- **Upload**: MinIO para armazenamento de arquivos
-- **WebSocket**: Socket.IO para atualizações em tempo real
-- **Logs**: Winston para logging estruturado
+- **REST API**: Endpoints for upload, analysis, and reports
+- **Authentication**: JWT with refresh tokens
+- **Database**: PostgreSQL with Prisma ORM
+- **Cache**: Redis for sessions and queues
+- **Queues**: Bull for asynchronous processing
+- **Upload**: MinIO for file storage
+- **WebSocket**: Socket.IO for real-time updates
+- **Logs**: Winston for structured logging
 
 ### Frontend (React + TypeScript)
-- **Interface Moderna**: Design responsivo com Tailwind CSS
-- **Animações**: Framer Motion para transições suaves
-- **Upload Drag & Drop**: Interface intuitiva para upload de arquivos
-- **Dashboard**: Gráficos e estatísticas em tempo real
-- **Roteamento**: React Router para navegação
-- **Estado**: React Query para gerenciamento de estado
-- **Notificações**: Toast notifications com react-hot-toast
+- **Modern Interface**: Responsive design with Tailwind CSS
+- **Animations**: Framer Motion for smooth transitions
+- **Drag & Drop Upload**: Intuitive interface for file uploads
+- **Dashboard**: Real-time charts and statistics
+- **Routing**: React Router for navigation
+- **State**: React Query for state management
+- **Notifications**: Toast notifications with react-hot-toast
 
-### Infraestrutura
-- **Docker**: Containerização completa
-- **Nginx**: Reverse proxy e load balancing
-- **PostgreSQL**: Banco de dados principal
-- **Redis**: Cache e filas
-- **MinIO**: Armazenamento de objetos
+### Infrastructure
+- **Docker**: Complete containerization
+- **Nginx**: Reverse proxy and load balancing
+- **PostgreSQL**: Main database
+- **Redis**: Cache and queues
+- **MinIO**: Object storage
 
-## 📦 Instalação
+## 📦 Installation
 
-### Pré-requisitos
-- Docker e Docker Compose
-- Node.js 18+ (para desenvolvimento local)
+### Prerequisites
+- Docker and Docker Compose
+- Node.js 18+ (for local development)
 - Git
 
-### 1. Clone o repositório
+### 1. Clone the repository
 ```bash
-git clone https://github.com/seu-usuario/truecheck-ai.git
+git clone https://github.com/your-username/truecheck-ai.git
 cd truecheck-ai
 ```
 
-### 2. Configure as variáveis de ambiente
+### 2. Configure environment variables
 ```bash
 # Backend
 cp backend/.env.example backend/.env
@@ -63,25 +63,25 @@ cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env
 ```
 
-### 3. Configure as chaves de API (opcional)
-Para usar detecção real, adicione suas chaves de API no arquivo `backend/.env`:
+### 3. Configure API keys (optional)
+To use real detection, add your API keys in the `backend/.env` file:
 ```env
-GPTZERO_API_KEY=sua_chave_gptzero
-HIVE_API_KEY=sua_chave_hive
-OPENAI_API_KEY=sua_chave_openai
+GPTZERO_API_KEY=your_gptzero_key
+HIVE_API_KEY=your_hive_key
+OPENAI_API_KEY=your_openai_key
 ```
 
-### 4. Execute com Docker
+### 4. Run with Docker
 ```bash
 docker-compose up -d
 ```
 
-### 5. Acesse a aplicação
+### 5. Access the application
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:5000
-- **Documentação API**: http://localhost:5000/api-docs
+- **API Documentation**: http://localhost:5000/api-docs
 
-## 🛠️ Desenvolvimento
+## 🛠️ Development
 
 ### Backend
 ```bash
@@ -97,74 +97,74 @@ npm install
 npm run dev
 ```
 
-### Banco de Dados
+### Database
 ```bash
-# Aplicar migrações
+# Apply migrations
 cd backend
 npx prisma migrate dev
 
-# Gerar cliente Prisma
+# Generate Prisma client
 npx prisma generate
 ```
 
-## 📊 Estrutura do Projeto
+## 📊 Project Structure
 
 ```
 truecheck-ai/
-├── backend/                 # API Node.js
+├── backend/                 # Node.js API
 │   ├── src/
-│   │   ├── controllers/     # Controladores da API
-│   │   ├── middleware/      # Middlewares
-│   │   ├── models/          # Modelos Prisma
-│   │   ├── routes/          # Rotas da API
-│   │   ├── services/        # Serviços de negócio
-│   │   └── utils/           # Utilitários
-│   ├── prisma/              # Schema e migrações
+│   │   ├── controllers/     # API controllers
+│   │   ├── middleware/      # Middleware
+│   │   ├── models/          # Prisma models
+│   │   ├── routes/          # API routes
+│   │   ├── services/        # Business services
+│   │   └── utils/           # Utilities
+│   ├── prisma/              # Schema and migrations
 │   └── package.json
-├── frontend/                # Aplicação React
+├── frontend/                # React application
 │   ├── src/
-│   │   ├── components/      # Componentes React
-│   │   ├── contexts/        # Contextos (Auth, Socket)
-│   │   ├── pages/           # Páginas da aplicação
+│   │   ├── components/      # React components
+│   │   ├── contexts/        # Contexts (Auth, Socket)
+│   │   ├── pages/           # Application pages
 │   │   ├── hooks/           # Custom hooks
-│   │   └── utils/           # Utilitários
+│   │   └── utils/           # Utilities
 │   └── package.json
-├── docker-compose.yml       # Configuração Docker
-├── nginx/                   # Configuração Nginx
+├── docker-compose.yml       # Docker configuration
+├── nginx/                   # Nginx configuration
 └── README.md
 ```
 
-## 🔧 Configuração
+## 🔧 Configuration
 
-### Variáveis de Ambiente
+### Environment Variables
 
 #### Backend (.env)
 ```env
-# Servidor
+# Server
 PORT=5000
 NODE_ENV=development
 
-# Banco de Dados
+# Database
 DATABASE_URL="postgresql://user:password@localhost:5432/truecheck_ai"
 
 # Redis
 REDIS_URL="redis://localhost:6379"
 
 # JWT
-JWT_SECRET=sua_chave_jwt_secreta
-JWT_REFRESH_SECRET=sua_chave_refresh_secreta
+JWT_SECRET=your_secret_jwt_key
+JWT_REFRESH_SECRET=your_refresh_secret_key
 
 # MinIO
 MINIO_ENDPOINT=localhost
 MINIO_PORT=9000
-MINIO_ACCESS_KEY=sua_access_key
-MINIO_SECRET_KEY=sua_secret_key
+MINIO_ACCESS_KEY=your_access_key
+MINIO_SECRET_KEY=your_secret_key
 MINIO_BUCKET=uploads
 
-# APIs de Detecção
-GPTZERO_API_KEY=sua_chave_gptzero
-HIVE_API_KEY=sua_chave_hive
-OPENAI_API_KEY=sua_chave_openai
+# Detection APIs
+GPTZERO_API_KEY=your_gptzero_key
+HIVE_API_KEY=your_hive_key
+OPENAI_API_KEY=your_openai_key
 ```
 
 #### Frontend (.env)
@@ -175,9 +175,9 @@ VITE_SOCKET_URL=http://localhost:5000
 
 ## 🚀 Deploy
 
-### Produção com Docker
+### Production with Docker
 ```bash
-# Build das imagens
+# Build images
 docker-compose -f docker-compose.prod.yml build
 
 # Deploy
@@ -185,69 +185,69 @@ docker-compose -f docker-compose.prod.yml up -d
 ```
 
 ### VPS/Cloud
-1. Configure um servidor com Docker
-2. Clone o repositório
-3. Configure as variáveis de ambiente
-4. Execute `docker-compose -f docker-compose.prod.yml up -d`
+1. Set up a server with Docker
+2. Clone the repository
+3. Configure environment variables
+4. Run `docker-compose -f docker-compose.prod.yml up -d`
 
-## 📈 Monitoramento
+## 📈 Monitoring
 
 ### Logs
 ```bash
-# Logs do backend
+# Backend logs
 docker-compose logs -f backend
 
-# Logs do frontend
+# Frontend logs
 docker-compose logs -f frontend
 
-# Logs do banco de dados
+# Database logs
 docker-compose logs -f postgres
 ```
 
-### Métricas
-- **Backend**: Winston logs estruturados
-- **Frontend**: Console logs e error tracking
-- **Banco**: Prisma query logs
-- **Redis**: Monitor de performance
+### Metrics
+- **Backend**: Winston structured logs
+- **Frontend**: Console logs and error tracking
+- **Database**: Prisma query logs
+- **Redis**: Performance monitoring
 
-## 🔒 Segurança
+## 🔒 Security
 
-- **Autenticação JWT**: Tokens seguros com refresh
-- **Rate Limiting**: Proteção contra ataques
-- **Validação de Arquivos**: Verificação de tipos e tamanhos
-- **CORS**: Configuração segura para cross-origin
-- **Headers de Segurança**: Proteção contra ataques comuns
-- **Audit Logs**: Registro de todas as ações
+- **JWT Authentication**: Secure tokens with refresh
+- **Rate Limiting**: Protection against attacks
+- **File Validation**: Type and size verification
+- **CORS**: Secure cross-origin configuration
+- **Security Headers**: Protection against common attacks
+- **Audit Logs**: Record of all actions
 
-## 🤝 Contribuição
+## 🤝 Contributing
 
-1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
-5. Abra um Pull Request
+1. Fork the project
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-## 📝 Licença
+## 📝 License
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
 
-## 🆘 Suporte
+## 🆘 Support
 
-- **Documentação**: [docs.truecheck-ai.com](https://docs.truecheck-ai.com)
-- **Issues**: [GitHub Issues](https://github.com/seu-usuario/truecheck-ai/issues)
-- **Email**: suporte@truecheck-ai.com
+- **Documentation**: [docs.truecheck-ai.com](https://docs.truecheck-ai.com)
+- **Issues**: [GitHub Issues](https://github.com/your-username/truecheck-ai/issues)
+- **Email**: support@truecheck-ai.com
 
 ## 🎯 Roadmap
 
-- [ ] Suporte para mais idiomas
-- [ ] API GraphQL
-- [ ] Integração com mais provedores de IA
-- [ ] Dashboard avançado com mais métricas
-- [ ] Sistema de notificações por email
-- [ ] API para webhooks
-- [ ] SDK para diferentes linguagens
-- [ ] Interface mobile nativa
+- [ ] Support for more languages
+- [ ] GraphQL API
+- [ ] Integration with more AI providers
+- [ ] Advanced dashboard with more metrics
+- [ ] Email notification system
+- [ ] Webhooks API
+- [ ] SDKs for different languages
+- [ ] Native mobile interface
 
 ---
 
-Desenvolvido com ❤️ pela equipe TrueCheck AI 
+Developed with ❤️ by the TrueCheck AI team 
