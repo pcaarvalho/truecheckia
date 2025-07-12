@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import { body, validationResult } from 'express-validator';
 import { prisma } from '../config/database';
-import { minioClient, BUCKET_NAME } from '../config/minio';
+import { fileStorage } from '../config/fileStorage';
 import { authenticateToken, requireActivePlan, checkPlanLimits, incrementPlanUsage } from '../middleware/auth';
 import { uploadLimiter } from '../middleware/rateLimiter';
 import { logger } from '../utils/logger';
@@ -267,19 +267,18 @@ router.post('/upload',
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
 
-    // Verifica se MinIO está configurado
-    if (!minioClient) {
-      return res.status(503).json({ error: 'Upload de arquivos não disponível - MinIO não configurado' });
+    // Verifica se sistema de storage está configurado
+    if (!fileStorage) {
+      return res.status(503).json({ error: 'Upload de arquivos não disponível - Storage não configurado' });
     }
 
     const { title, description } = req.body;
     const userId = req.user.id;
     const file = req.file;
 
-
-    // Upload para MinIO
+    // Upload usando o sistema de storage configurado
     const fileName = `${userId}/${Date.now()}-${file.originalname}`;
-    await minioClient.putObject(BUCKET_NAME, fileName, file.buffer);
+    await fileStorage.uploadFile(fileName, file.buffer, file.mimetype);
 
     // Determina tipo de conteúdo
     let contentType = 'TEXT';
@@ -312,7 +311,10 @@ router.post('/upload',
     await addToQueue('analysis', {
       analysisId: analysis.id,
       contentType: analysis.contentType,
-      fileUrl: fileName
+      fileUrl: fileName,
+      fileName: file.originalname,
+      fileSize: file.size,
+      mimeType: file.mimetype
     });
 
     // Incrementa o contador de uso do plano
@@ -321,6 +323,55 @@ router.post('/upload',
     logger.info(`Arquivo enviado: ${fileName} por ${req.user.email}`);
 
     return res.status(201).json(analysis);
+  } catch (error) {
+    return next(error);
+  }
+});
+
+/**
+ * @swagger
+ * /api/analysis/{id}/file-url:
+ *   get:
+ *     summary: Obter URL do arquivo de uma análise
+ *     tags: [Analysis]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     security:
+ *       - bearerAuth: []
+ */
+router.get('/:id/file-url', authenticateToken, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    // Busca a análise
+    const analysis = await prisma.analysis.findFirst({
+      where: { 
+        id,
+        userId
+      }
+    });
+
+    if (!analysis) {
+      return res.status(404).json({ error: 'Análise não encontrada' });
+    }
+
+    if (!analysis.fileUrl) {
+      return res.status(404).json({ error: 'Arquivo não encontrado' });
+    }
+
+    // Gera URL do arquivo
+    const fileUrl = await fileStorage.getFileUrl(analysis.fileUrl);
+
+    return res.json({ fileUrl });
   } catch (error) {
     return next(error);
   }

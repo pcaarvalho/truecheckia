@@ -4,7 +4,7 @@ import { redis } from '../config/redis';
 
 const router = Router();
 
-router.get('/health', async (_req: Request, res: Response) => {
+router.get('/', async (_req: Request, res: Response) => {
   const healthcheck = {
     uptime: process.uptime(),
     timestamp: Date.now(),

@@ -145,8 +145,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       toast.success(response.data.message || 'Conta criada com sucesso!');
       
-      // Usuários novos sempre precisam selecionar um plano
-      navigate('/select-plan');
+      // Redirecionar baseado em requiresPlanSelection
+      if (user.requiresPlanSelection) {
+        navigate('/select-plan');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (error: any) {
       console.error('❌ Erro no registro:', error);
       

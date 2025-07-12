@@ -30,12 +30,13 @@ import {
 import { setupDatabase } from './config/database';
 import { setupRedis } from './config/redis';
 import { setupMinIO } from './config/minio';
+import { setupFileStorage } from './config/fileStorage';
 import { setupSwagger } from './config/swagger';
 
 // Rotas
 import { authRoutes } from './routes/auth';
 import { analysisRoutes } from './routes/analysis';
-import { userRoutes } from './routes/user';
+import userRoutes from './routes/user';
 import { reportRoutes } from './routes/reports';
 import { adminRoutes } from './routes/admin';
 import healthRoutes from './routes/health';
@@ -85,7 +86,7 @@ class Server {
     this.server = http.createServer(this.app);
     this.io = new SocketIOServer(this.server, {
   cors: {
-        origin: process.env['FRONTEND_URL'] || "http://localhost:5173",
+        origin: process.env['FRONTEND_URL'] || "http://localhost:3000",
         methods: ["GET", "POST"],
         credentials: true
       },
@@ -132,9 +133,9 @@ class Server {
         logger.warn('⚠️ Redis não disponível, usando cache em memória:', error);
       }
 
-      // Inicializa MinIO
-      await setupMinIO();
-      logger.info('✅ MinIO conectado');
+      // Inicializa sistema de storage (MinIO ou local)
+      await setupFileStorage();
+      logger.info('✅ Sistema de storage configurado');
 
     } catch (error) {
       logger.error('❌ Erro ao inicializar serviços:', error);
@@ -206,6 +207,9 @@ class Server {
 
     // Sanitização
     this.app.use(sanitizeInput);
+
+    // Arquivos estáticos (uploads locais)
+    this.app.use('/uploads', express.static('uploads'));
 
     // Documentação Swagger
     this.app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {

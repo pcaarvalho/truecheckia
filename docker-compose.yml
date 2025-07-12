@@ -1,136 +1,275 @@
+# Docker Compose para Ambiente de Desenvolvimento - TrueCheckIA
+# Execute com: docker compose up -d
+# Para parar: docker compose down
+# Para rebuild: docker compose up --build
+
 version: '3.8'
 
-services:
-  # Backend API
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    ports:
-      - "3001:3001"
-    environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://postgres:password@postgres:5432/ai_detector
-      - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
-      - JWT_REFRESH_SECRET=your-super-secret-refresh-key-change-in-production
-      - GPTZERO_API_KEY=${GPTZERO_API_KEY}
-      - HIVE_API_KEY=${HIVE_API_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - MINIO_ACCESS_KEY=minioadmin
-      - MINIO_SECRET_KEY=minioadmin123
-      - MINIO_ENDPOINT=minio:9000
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
-    depends_on:
-      - postgres
-      - redis
-      - minio
-    networks:
-      - ai-detector-network
-
-  # Frontend React App
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      - REACT_APP_API_URL=http://localhost:3001
-      - REACT_APP_WS_URL=ws://localhost:3001
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    depends_on:
-      - backend
-    networks:
-      - ai-detector-network
-
-  # PostgreSQL Database
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      - POSTGRES_DB=ai_detector
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./backend/prisma/init.sql:/docker-entrypoint-initdb.d/init.sql
-    networks:
-      - ai-detector-network
-
-  # Redis Cache
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - ai-detector-network
-
-  # MinIO Object Storage
-  minio:
-    image: minio/minio:latest
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    environment:
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin123
-    volumes:
-      - minio_data:/data
-    command: server /data --console-address ":9001"
-    networks:
-      - ai-detector-network
-
-  # Nginx Reverse Proxy
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./docker/nginx/ssl:/etc/nginx/ssl
-    depends_on:
-      - frontend
-      - backend
-    networks:
-      - ai-detector-network
-
-  # Queue Worker
-  worker:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    command: npm run worker
-    environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://postgres:password@postgres:5432/ai_detector
-      - REDIS_URL=redis://redis:6379
-      - GPTZERO_API_KEY=${GPTZERO_API_KEY}
-      - HIVE_API_KEY=${HIVE_API_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
-    depends_on:
-      - postgres
-      - redis
-      - minio
-    networks:
-      - ai-detector-network
+networks:
+  truecheckia-network:
+    driver: bridge
+    name: truecheckia-dev
 
 volumes:
   postgres_data:
-  redis_data:
+    driver: local
+    name: truecheckia_postgres_data
   minio_data:
+    driver: local
+    name: truecheckia_minio_data
+  redis_data:
+    driver: local
+    name: truecheckia_redis_data
 
-networks:
-  ai-detector-network:
-    driver: bridge 
+services:
+  # =============================================================================
+  # DATABASE - PostgreSQL
+  # =============================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: truecheckia-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ai_detector}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres:/docker-entrypoint-initdb.d
+    networks:
+      - truecheckia-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-ai_detector}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # =============================================================================
+  # CACHE - Redis
+  # =============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: truecheckia-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+      - ./docker/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    networks:
+      - truecheckia-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # =============================================================================
+  # STORAGE - MinIO (S3 Compatible)
+  # =============================================================================
+  minio:
+    image: minio/minio:latest
+    container_name: truecheckia-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin123}
+      MINIO_DEFAULT_BUCKETS: ${MINIO_DEFAULT_BUCKETS:-truecheckia}
+    ports:
+      - "${MINIO_PORT:-9000}:9000"      # API
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"  # Console Web UI
+    volumes:
+      - minio_data:/data
+      - ./docker/minio:/docker-entrypoint-initdb.d
+    networks:
+      - truecheckia-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # =============================================================================
+  # BACKEND - Node.js API
+  # =============================================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+      target: development
+    container_name: truecheckia-backend
+    restart: unless-stopped
+    environment:
+      # Database
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-ai_detector}
+      
+      # Redis
+      REDIS_URL: redis://${REDIS_PASSWORD:+:${REDIS_PASSWORD}@}redis:6379
+      
+      # MinIO
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin123}
+      MINIO_BUCKET: ${MINIO_BUCKET:-truecheckia}
+      
+      # JWT
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-your-super-secret-refresh-key-change-in-production}
+      
+      # API Keys
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      
+      # Server
+      NODE_ENV: development
+      PORT: 3001
+      HOST: 0.0.0.0
+      
+      # CORS
+      CORS_ORIGIN: ${FRONTEND_URL:-http://localhost:3000,http://localhost}
+      
+      # Features
+      SKIP_REDIS: false
+      SKIP_MINIO: false
+      SKIP_AI_DETECTION: false
+    ports:
+      - "${BACKEND_PORT:-3001}:3001"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./uploads:/app/uploads
+    networks:
+      - truecheckia-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # =============================================================================
+  # FRONTEND - React SPA
+  # =============================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+      target: development
+    container_name: truecheckia-frontend
+    restart: unless-stopped
+    environment:
+      # API Configuration
+      VITE_API_URL: ${API_URL:-http://localhost/api}
+      
+      # App Configuration
+      VITE_APP_NAME: ${APP_NAME:-TrueCheck AI}
+      VITE_APP_VERSION: ${APP_VERSION:-1.0.0}
+      
+      # Development
+      NODE_ENV: development
+      CHOKIDAR_USEPOLLING: true
+      WATCHPACK_POLLING: true
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - truecheckia-network
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # =============================================================================
+  # REVERSE PROXY - Nginx
+  # =============================================================================
+  nginx:
+    image: nginx:alpine
+    container_name: truecheckia-nginx
+    restart: unless-stopped
+    ports:
+      - "${NGINX_PORT:-80}:80"
+      - "${NGINX_SSL_PORT:-443}:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./docker/nginx/ssl:/etc/nginx/ssl:ro
+      - ./frontend/dist:/var/www/html:ro
+    networks:
+      - truecheckia-network
+    depends_on:
+      - backend
+      - frontend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# =============================================================================
+# PORTAS EXPOSTAS PARA ACESSO LOCAL:
+# =============================================================================
+# 80    - Nginx (Frontend + API via proxy)
+# 3000  - Frontend direto (React Vite dev server)
+# 3001  - Backend direto (Node.js API)
+# 5432  - PostgreSQL (para clients como DBeaver, pgAdmin)
+# 6379  - Redis (para clients como RedisInsight)
+# 9000  - MinIO API (S3 compatible)
+# 9001  - MinIO Console (Web UI para gerenciar buckets)
+# 443   - Nginx SSL (se configurado)
+#
+# URLs DE ACESSO:
+# - Aplicação completa: http://localhost
+# - Frontend dev: http://localhost:3000
+# - Backend API: http://localhost:3001
+# - MinIO Console: http://localhost:9001
+# - API Docs: http://localhost:3001/api-docs
+# - Health Check: http://localhost:3001/health
+# =============================================================================

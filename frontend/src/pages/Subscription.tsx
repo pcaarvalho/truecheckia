@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import PlanUsage from '../components/dashboard/PlanUsage';
+import { formatCurrency } from '../utils/formatters';
 
 interface CurrentPlan {
   id: string;
@@ -78,8 +79,8 @@ const Subscription: React.FC = () => {
   const fetchData = async () => {
     try {
       const [currentResponse, plansResponse] = await Promise.all([
-        api.get('/plans/current'),
-        api.get('/plans/available')
+        api.get('/api/plans/current'),
+        api.get('/api/plans/available')
       ]);
 
       setCurrentPlan(currentResponse.data.data);
@@ -97,11 +98,11 @@ const Subscription: React.FC = () => {
     
     setChangingPlan(newPlanId);
     try {
-      const response = await api.post('/plans/select', { planId: newPlanId });
+      const response = await api.post('/api/plans/select', { planId: newPlanId });
       toast.success(response.data.data.message);
       
       // Atualiza dados do usuário
-      const userResponse = await api.get('/auth/me');
+      const userResponse = await api.get('/api/auth/me');
       updateUser(userResponse.data.user);
       
       // Recarrega dados
@@ -225,7 +226,7 @@ const Subscription: React.FC = () => {
             {currentPlan.plan.price > 0 && (
               <div className="text-right">
                 <div className="text-3xl font-bold text-gray-900">
-                  {currentPlan.plan.currency} {currentPlan.plan.price.toFixed(2)}
+                  {formatCurrency(currentPlan.plan.price, currentPlan.plan.currency)}
                 </div>
                 <div className="text-gray-600">por mês</div>
               </div>
@@ -271,7 +272,7 @@ const Subscription: React.FC = () => {
                     </h4>
                     <div className="mt-2">
                       <span className="text-2xl font-bold">
-                        {plan.currency} {plan.price.toFixed(2)}
+                        {formatCurrency(plan.price, plan.currency)}
                       </span>
                       <span className="text-gray-600">/mês</span>
                     </div>

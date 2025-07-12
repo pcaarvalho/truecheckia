@@ -12,11 +12,20 @@ import {
   Activity,
   AlertTriangle,
   Zap,
-  Eye
+  Eye,
+  Sparkles
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useSocket } from '../contexts/SocketContext'
 import { authService } from '../services/api'
+import { FileUpload } from '../components/upload/FileUpload'
+import { PlanStatusCard } from '../components/dashboard/PlanStatusCard'
+import { QuotaUsageCard } from '../components/dashboard/QuotaUsageCard'
+import { QuickActions } from '../components/dashboard/QuickActions'
+import { StatsOverview } from '../components/dashboard/StatsOverview'
+import { OnboardingModal } from '../components/onboarding/OnboardingModal'
+import { WelcomeBanner } from '../components/onboarding/WelcomeBanner'
+import { useOnboarding } from '../hooks/useOnboarding'
 import toast from 'react-hot-toast'
 
 interface AnalysisResult {
@@ -42,6 +51,7 @@ interface Analysis {
 export const DashboardPage = () => {
   const { user } = useAuth()
   const { socket, connected: isConnected } = useSocket()
+  const { showOnboarding, closeOnboarding, resetOnboarding } = useOnboarding()
   
   const [activeTab, setActiveTab] = useState<'analyze' | 'upload' | 'history'>('analyze')
   const [isLoading, setIsLoading] = useState(false)
@@ -161,24 +171,64 @@ export const DashboardPage = () => {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 rounded-xl p-6 border border-blue-500/20"
+        className="text-center md:text-left"
       >
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-white mb-2">
-              TrueCheckIA - Detecção de Conteúdo Gerado por IA
-            </h1>
-            <p className="text-gray-300">
-              Bem-vindo, {user?.name}! Use nossa IA avançada para detectar conteúdo artificial.
-            </p>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-            <span className="text-sm text-gray-300">
-              {isConnected ? 'Conectado' : 'Desconectado'}
-            </span>
-          </div>
-        </div>
+        <h1 className="text-3xl font-bold text-white mb-2 flex items-center justify-center md:justify-start">
+          <Sparkles className="mr-3 text-yellow-400" size={32} />
+          Bem-vindo de volta, {user?.name}!
+        </h1>
+        <p className="text-gray-300 text-lg">
+          Sua central de detecção de conteúdo IA está pronta para uso.
+        </p>
+      </motion.div>
+
+      {/* Welcome Banner for new users */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.05 }}
+      >
+        <WelcomeBanner onStartTour={resetOnboarding} />
+      </motion.div>
+
+      {/* Plan Status and Usage Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+        >
+          <PlanStatusCard />
+        </motion.div>
+        
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="lg:col-span-2"
+        >
+          <QuotaUsageCard />
+        </motion.div>
+      </div>
+
+      {/* Statistics Overview */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.3 }}
+      >
+        <h2 className="text-xl font-semibold text-white mb-4">Visão Geral</h2>
+        <StatsOverview />
+      </motion.div>
+
+      {/* Quick Actions */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.4 }}
+      >
+        <h2 className="text-xl font-semibold text-white mb-4">Ações Rápidas</h2>
+        <QuickActions />
       </motion.div>
 
       {/* Tabs Navigation */}
@@ -373,24 +423,16 @@ export const DashboardPage = () => {
 
         {/* Upload de Arquivo - DESABILITADO */}
         {activeTab === 'upload' && (
-          <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 opacity-75">
-            <h2 className="text-xl font-semibold text-gray-400 mb-4 flex items-center">
-              <Upload className="mr-2 text-gray-500" size={24} />
-              Upload de Arquivo - Em Desenvolvimento
+          <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <h2 className="text-xl font-semibold text-white mb-6 flex items-center">
+              <Upload className="mr-2 text-blue-400" size={24} />
+              Upload e Análise de Arquivos
             </h2>
-            <div className="text-center py-12 border-2 border-dashed border-gray-600 rounded-lg">
-              <Upload size={64} className="mx-auto text-gray-600 mb-4" />
-              <p className="text-gray-500 mb-2 font-medium">🚧 Funcionalidade Temporariamente Desabilitada</p>
-              <p className="text-sm text-gray-600 mb-4">
-                Por favor, use a análise de texto por enquanto.<br/>
-                O upload de arquivos será habilitado em breve.
+            <div className="space-y-4">
+              <p className="text-slate-300 mb-4">
+                Arraste e solte arquivos para análise automática de IA. Suporta imagens, vídeos, documentos e mais.
               </p>
-              <button
-                onClick={() => setActiveTab('analyze')}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-              >
-                Ir para Análise de Texto
-              </button>
+              <FileUpload />
             </div>
           </div>
         )}
@@ -467,6 +509,12 @@ export const DashboardPage = () => {
           </div>
         )}
       </motion.div>
+
+      {/* Onboarding Modal */}
+      <OnboardingModal 
+        isOpen={showOnboarding} 
+        onClose={closeOnboarding} 
+      />
     </div>
   )
 } 

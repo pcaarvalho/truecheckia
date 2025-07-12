@@ -144,6 +144,16 @@ router.post('/select', authenticateToken, async (req: Request, res: Response) =>
     let userPlan;
     const now = new Date();
 
+    // Verificar se usuário já usou trial para planos pagos
+    if (selectedPlan.price > 0 && existingUserPlan?.isTrialUsed) {
+      return res.status(400).json({
+        success: false,
+        message: 'Você já utilizou seu período de trial. Para acessar este plano, é necessário realizar o pagamento.',
+        requiresPayment: true,
+        trialDays: 0
+      });
+    }
+
     if (existingUserPlan) {
       // Atualizar plano existente
       userPlan = await prisma.userPlan.update({
@@ -188,18 +198,29 @@ router.post('/select', authenticateToken, async (req: Request, res: Response) =>
 
     // Se for plano pago e está em trial, criar subscription pendente
     if (selectedPlan.price > 0 && userPlan.status === 'TRIAL') {
-      await prisma.subscription.create({
-        data: {
+      // Verificar se já existe uma subscription pendente para evitar duplicação
+      const existingPendingSubscription = await prisma.subscription.findFirst({
+        where: {
           userId,
-          userPlanId: userPlan.id,
           planId: selectedPlan.id,
-          status: 'PENDING',
-          amount: selectedPlan.price,
-          currency: selectedPlan.currency,
-          interval: 'MONTHLY',
-          startDate: userPlan.trialEndsAt || now
+          status: 'PENDING'
         }
       });
+
+      if (!existingPendingSubscription) {
+        await prisma.subscription.create({
+          data: {
+            userId,
+            userPlanId: userPlan.id,
+            planId: selectedPlan.id,
+            status: 'PENDING',
+            amount: selectedPlan.price,
+            currency: selectedPlan.currency,
+            interval: 'MONTHLY',
+            startDate: userPlan.trialEndsAt || now
+          }
+        });
+      }
     }
 
     res.json({
@@ -250,15 +271,27 @@ router.get('/check-limits', authenticateToken, async (req: Request, res: Respons
     // Verificar se precisa resetar contadores (mensal)
     const now = new Date();
     const lastReset = new Date(userPlan.lastResetDate);
-    const daysSinceReset = Math.floor((now.getTime() - lastReset.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Reset baseado em mudança de mês calendário, não em dias
+    const shouldReset = (
+      now.getFullYear() > lastReset.getFullYear() ||
+      (now.getFullYear() === lastReset.getFullYear() && now.getMonth() > lastReset.getMonth())
+    );
 
-    if (daysSinceReset >= 30) {
+    if (shouldReset) {
+      // Calcular início do mês atual para currentPeriodStart
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      // Calcular final do mês atual para currentPeriodEnd
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+      
       await prisma.userPlan.update({
         where: { userId },
         data: {
           analysesUsed: 0,
           reportsUsed: 0,
-          lastResetDate: now
+          lastResetDate: now,
+          currentPeriodStart: monthStart,
+          currentPeriodEnd: monthEnd
         }
       });
 

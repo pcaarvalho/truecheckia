@@ -1,0 +1,113 @@
+# Dockerfile de Desenvolvimento para Backend TrueCheckIA
+# Suporte a hot reload e debug
+
+# Stage 1: Base image
+FROM node:18-alpine AS base
+
+# Instalar dependências do sistema
+RUN apk add --no-cache \
+    curl \
+    bash \
+    git \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/cache/apk/*
+
+# Criar usuário não-root
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nodeuser -u 1001
+
+# Definir diretório de trabalho
+WORKDIR /app
+
+# Copiar package files
+COPY package*.json ./
+COPY prisma ./prisma/
+
+# Stage 2: Development
+FROM base AS development
+
+# Instalar todas as dependências (incluindo devDependencies)
+RUN npm ci --include=dev
+
+# Instalar nodemon globalmente para hot reload
+RUN npm install -g nodemon ts-node
+
+# Gerar Prisma client
+RUN npx prisma generate
+
+# Criar diretórios necessários
+RUN mkdir -p logs uploads
+
+# Mudar ownership para nodeuser
+RUN chown -R nodeuser:nodejs /app
+
+# Criar script de entrada para desenvolvimento
+RUN cat > /app/entrypoint.dev.sh << 'EOF'
+#!/bin/bash
+set -e
+
+echo "🚀 Iniciando TrueCheckIA Backend (Desenvolvimento)"
+
+# Aguardar banco de dados estar disponível
+echo "⏳ Aguardando PostgreSQL..."
+timeout 30s sh -c 'until pg_isready -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER; do sleep 1; done'
+
+# Executar migrations se necessário
+echo "🔄 Verificando migrations..."
+npx prisma migrate deploy --schema=prisma/schema.prisma || echo "⚠️ Erro nas migrations"
+
+# Gerar Prisma client
+echo "🔧 Gerando Prisma client..."
+npx prisma generate
+
+# Iniciar aplicação com hot reload
+echo "🌟 Iniciando servidor com hot reload..."
+exec nodemon --exec ts-node --transpile-only src/server.ts
+EOF
+
+RUN chmod +x /app/entrypoint.dev.sh
+
+# Mudar para usuário não-root
+USER nodeuser
+
+# Expor porta
+EXPOSE 3001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:3001/health || exit 1
+
+# Comando padrão
+CMD ["/app/entrypoint.dev.sh"]
+
+# Stage 3: Production (para referência futura)
+FROM base AS production
+
+ENV NODE_ENV=production
+
+# Instalar apenas dependências de produção
+RUN npm ci --only=production --no-audit
+
+# Copiar código fonte
+COPY --chown=nodeuser:nodejs . .
+
+# Gerar Prisma client
+RUN npx prisma generate
+
+# Build da aplicação
+RUN npm run build
+
+# Mudar para usuário não-root
+USER nodeuser
+
+# Expor porta
+EXPOSE 3001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:3001/health || exit 1
+
+# Comando de produção
+CMD ["npm", "start"]

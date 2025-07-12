@@ -100,6 +100,8 @@ dist
 *.db
 *.sqlite
 *.sqlite3
+prisma/dev.db
+backend/prisma/dev.db
 
 # Build outputs
 build/
@@ -119,3 +121,14 @@ dist/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Uploads e arquivos de usuário
+uploads/
+backend/uploads/
+frontend/uploads/
+storage/
+tmp/
+
+# Ignora todos os arquivos Markdown, EXCETO o README.md
+*.md
+!README.md

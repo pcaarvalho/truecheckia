@@ -36,7 +36,7 @@ const PlanUsage: React.FC = () => {
 
   const fetchPlanLimits = async () => {
     try {
-      const response = await api.get('/plans/check-limits');
+      const response = await api.get('/api/plans/check-limits');
       setLimits(response.data.data);
     } catch (error) {
       console.error('Erro ao buscar limites do plano:', error);

@@ -41,7 +41,17 @@ router.post('/register', [
     // Hash da senha
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Cria o usuário sem plano (deve escolher após o cadastro)
+    // Buscar o plano FREE
+    const freePlan = await prisma.plan.findFirst({
+      where: { name: 'FREE' }
+    });
+
+    if (!freePlan) {
+      logger.error('Plano FREE não encontrado no banco de dados');
+      return res.status(500).json({ error: 'Configuração de planos incompleta' });
+    }
+
+    // Cria o usuário com plano FREE automático
     const user = await prisma.user.create({
       data: {
         email,
@@ -54,6 +64,23 @@ router.post('/register', [
         name: true,
         role: true,
         createdAt: true
+      }
+    });
+
+    // Criar UserPlan automático com plano FREE
+    const now = new Date();
+    const userPlan = await prisma.userPlan.create({
+      data: {
+        userId: user.id,
+        planId: freePlan.id,
+        planType: 'FREE',
+        status: 'ACTIVE',
+        currentPeriodStart: now,
+        currentPeriodEnd: null, // Plano gratuito não tem expiração
+        analysesUsed: 0,
+        reportsUsed: 0,
+        isTrialUsed: false,
+        lastResetDate: now
       }
     });
 
@@ -88,11 +115,16 @@ router.post('/register', [
         email: user.email,
         name: user.name,
         role: user.role,
-        requiresPlanSelection: true
+        plan: {
+          ...userPlan,
+          plan: freePlan,
+          requiresPlanSelection: false
+        },
+        requiresPlanSelection: false
       },
       accessToken,
       refreshToken,
-      message: 'Cadastro realizado com sucesso! Escolha um plano para começar.'
+      message: 'Cadastro realizado com sucesso! Bem-vindo ao TrueCheckIA.'
     });
   } catch (error) {
     logger.error('Erro no registro:', error);
@@ -169,6 +201,36 @@ router.post('/login', [
       jwtRefreshSecret,
       { expiresIn: '7d' }
     );
+
+    // Se usuário não tem plano, criar automaticamente um plano FREE
+    if (!user.userPlan) {
+      const freePlan = await prisma.plan.findFirst({
+        where: { name: 'FREE' }
+      });
+
+      if (freePlan) {
+        const now = new Date();
+        const newUserPlan = await prisma.userPlan.create({
+          data: {
+            userId: user.id,
+            planId: freePlan.id,
+            planType: 'FREE',
+            status: 'ACTIVE',
+            currentPeriodStart: now,
+            currentPeriodEnd: null,
+            analysesUsed: 0,
+            reportsUsed: 0,
+            isTrialUsed: false,
+            lastResetDate: now
+          },
+          include: {
+            plan: true
+          }
+        });
+
+        user.userPlan = newUserPlan;
+      }
+    }
 
     logger.info(`✅ Login realizado com sucesso: ${user.email}`);
 
@@ -291,6 +353,36 @@ router.get('/me', authenticateToken, async (req: Request, res: Response, next: N
 
     if (!user.isActive) {
       return res.status(401).json({ error: 'Conta desativada' });
+    }
+
+    // Se usuário não tem plano, criar automaticamente um plano FREE
+    if (!user.userPlan) {
+      const freePlan = await prisma.plan.findFirst({
+        where: { name: 'FREE' }
+      });
+
+      if (freePlan) {
+        const now = new Date();
+        const newUserPlan = await prisma.userPlan.create({
+          data: {
+            userId: user.id,
+            planId: freePlan.id,
+            planType: 'FREE',
+            status: 'ACTIVE',
+            currentPeriodStart: now,
+            currentPeriodEnd: null,
+            analysesUsed: 0,
+            reportsUsed: 0,
+            isTrialUsed: false,
+            lastResetDate: now
+          },
+          include: {
+            plan: true
+          }
+        });
+
+        user.userPlan = newUserPlan;
+      }
     }
 
     logger.debug(`Perfil obtido para usuário: ${user.email}`);

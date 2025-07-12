@@ -1,21 +1,22 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient()
 
 async function main() {
-  console.log('🌱 Starting database seed...');
+  console.log('🌱 Iniciando seed do banco de dados...')
 
-  // Criar planos
+  // Criar planos se não existirem
   const plans = [
     {
       name: 'FREE',
       displayName: 'Gratuito',
-      description: 'Perfeito para começar a explorar nossa plataforma',
+      description: 'Perfeito para começar',
       price: 0,
-      maxAnalyses: 5,
-      maxFileSize: 10,
-      maxVideoLength: 5,
-      maxReports: 2,
+      currency: 'BRL',
+      maxAnalyses: 10,
+      maxFileSize: 1048576, // 1MB
+      maxVideoLength: 0,
+      maxReports: 5,
       features: JSON.stringify({
         textAnalysis: true,
         imageAnalysis: false,
@@ -27,41 +28,18 @@ async function main() {
         advancedFilters: false,
         exportData: false,
         whiteLabel: false
-      }),
-      sortOrder: 1
-    },
-    {
-      name: 'STARTER',
-      displayName: 'Iniciante',
-      description: 'Ideal para profissionais individuais',
-      price: 49.90,
-      maxAnalyses: 100,
-      maxFileSize: 50,
-      maxVideoLength: 15,
-      maxReports: 20,
-      features: JSON.stringify({
-        textAnalysis: true,
-        imageAnalysis: true,
-        videoAnalysis: false,
-        apiAccess: false,
-        prioritySupport: false,
-        customReports: true,
-        teamCollaboration: false,
-        advancedFilters: true,
-        exportData: true,
-        whiteLabel: false
-      }),
-      sortOrder: 2
+      })
     },
     {
       name: 'PRO',
       displayName: 'Profissional',
-      description: 'Para equipes e uso intensivo',
-      price: 149.90,
-      maxAnalyses: 500,
-      maxFileSize: 200,
-      maxVideoLength: 30,
-      maxReports: 100,
+      description: 'Para usuários avançados',
+      price: 29.99,
+      currency: 'BRL',
+      maxAnalyses: 100,
+      maxFileSize: 10485760, // 10MB
+      maxVideoLength: 300, // 5 minutos
+      maxReports: 50,
       features: JSON.stringify({
         textAnalysis: true,
         imageAnalysis: true,
@@ -69,21 +47,21 @@ async function main() {
         apiAccess: true,
         prioritySupport: true,
         customReports: true,
-        teamCollaboration: true,
+        teamCollaboration: false,
         advancedFilters: true,
         exportData: true,
         whiteLabel: false
-      }),
-      sortOrder: 3
+      })
     },
     {
-      name: 'ENTERPRISE',
-      displayName: 'Empresarial',
-      description: 'Solução completa para grandes organizações',
-      price: 499.90,
+      name: 'PREMIUM',
+      displayName: 'Premium',
+      description: 'Para empresas e equipes',
+      price: 99.99,
+      currency: 'BRL',
       maxAnalyses: 99999,
-      maxFileSize: 1000,
-      maxVideoLength: 120,
+      maxFileSize: 104857600, // 100MB
+      maxVideoLength: 1800, // 30 minutos
       maxReports: 99999,
       features: JSON.stringify({
         textAnalysis: true,
@@ -99,69 +77,33 @@ async function main() {
         dedicatedSupport: true,
         sla: true,
         customIntegration: true
-      }),
-      sortOrder: 4
+      })
     }
-  ];
+  ]
 
-  for (const plan of plans) {
-    await prisma.plan.upsert({
-      where: { name: plan.name },
-      update: plan,
-      create: plan
-    });
-    console.log(`✅ Plan ${plan.displayName} created/updated`);
+  for (const planData of plans) {
+    const existingPlan = await prisma.plan.findUnique({
+      where: { name: planData.name }
+    })
+
+    if (!existingPlan) {
+      await prisma.plan.create({
+        data: planData
+      })
+      console.log(`✅ Plano ${planData.name} criado`)
+    } else {
+      console.log(`ℹ️ Plano ${planData.name} já existe`)
+    }
   }
 
-  // Criar usuário admin de exemplo
-  const adminEmail = 'admin@truecheckia.com';
-  const adminUser = await prisma.user.upsert({
-    where: { email: adminEmail },
-    update: {},
-    create: {
-      email: adminEmail,
-      password: '$2b$10$K7L1OzF9.zEkJXO5JqxGOOqHmRJXH5EKdRqWmVfLTXYwFwBtLMiDm', // senha: admin123
-      name: 'Admin TrueCheckIA',
-      role: 'ADMIN',
-      isActive: true
-    }
-  });
-
-  // Dar plano Enterprise ao admin
-  const enterprisePlan = await prisma.plan.findUnique({
-    where: { name: 'ENTERPRISE' }
-  });
-
-  if (enterprisePlan && adminUser) {
-    await prisma.userPlan.upsert({
-      where: { userId: adminUser.id },
-      update: {
-        planId: enterprisePlan.id,
-        planType: enterprisePlan.name,
-        status: 'ACTIVE',
-        analysesUsed: 0,
-        reportsUsed: 0
-      },
-      create: {
-        userId: adminUser.id,
-        planId: enterprisePlan.id,
-        planType: enterprisePlan.name,
-        status: 'ACTIVE',
-        analysesUsed: 0,
-        reportsUsed: 0
-      }
-    });
-    console.log(`✅ Admin user created with Enterprise plan`);
-  }
-
-  console.log('🎉 Seed completed successfully!');
+  console.log('🎉 Seed concluído com sucesso!')
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Seed failed:', e);
-    process.exit(1);
+    console.error('❌ Erro no seed:', e)
+    process.exit(1)
   })
   .finally(async () => {
-    await prisma.$disconnect();
-  });
+    await prisma.$disconnect()
+  })

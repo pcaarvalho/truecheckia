@@ -8,6 +8,7 @@ import {
   Globe, HeadphonesIcon, ArrowRight
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { formatPrice } from '../utils/formatters';
 
 interface PlanFeature {
   name: string;
@@ -48,7 +49,12 @@ const SelectPlan: React.FC = () => {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
-  const { updateUser } = useAuth();
+  const { user, updateUser } = useAuth();
+  
+  // Dados do plano atual do usuário
+  const currentPlan = user?.subscription?.plan?.name || 'FREE';
+  const isTrialActive = user?.subscription?.isTrial;
+  const hasActiveSubscription = user?.subscription && !user?.subscription?.canceled;
 
   useEffect(() => {
     fetchPlans();
@@ -56,7 +62,7 @@ const SelectPlan: React.FC = () => {
 
   const fetchPlans = async () => {
     try {
-      const response = await api.get('/plans/available');
+      const response = await api.get('/api/plans/available');
       setPlans(response.data.data);
       setLoading(false);
     } catch (error) {
@@ -71,13 +77,13 @@ const SelectPlan: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await api.post('/plans/select', { planId });
+      const response = await api.post('/api/plans/select', { planId });
       const { message, requiresPayment, trialDays } = response.data.data;
 
       toast.success(message);
 
       // Atualiza dados do usuário
-      const userResponse = await api.get('/auth/me');
+      const userResponse = await api.get('/api/auth/me');
       updateUser(userResponse.data.user);
 
       // Redireciona para dashboard ou página de pagamento
@@ -89,8 +95,9 @@ const SelectPlan: React.FC = () => {
     } catch (error: any) {
       console.error('Erro ao selecionar plano:', error);
       toast.error(error.response?.data?.message || 'Erro ao selecionar plano');
+    } finally {
       setIsSubmitting(false);
-      setSelectedPlan(null);
+      // Não resetar selectedPlan para manter contexto visual após erro
     }
   };
 
@@ -142,6 +149,39 @@ const SelectPlan: React.FC = () => {
     };
     return featureNames[key] || key;
   };
+  
+  const getButtonText = (planName: string) => {
+    // Se é o plano atual
+    if (planName === currentPlan && hasActiveSubscription) {
+      return 'Plano Atual';
+    }
+    
+    // Se está em trial
+    if (isTrialActive) {
+      if (planName === 'FREE') {
+        return 'Voltar para Free';
+      }
+      return planName === currentPlan ? 'Plano em Trial' : 'Mudar de Plano';
+    }
+    
+    // Para upgrades/downgrades
+    const planOrder = ['FREE', 'STARTER', 'PRO', 'ENTERPRISE'];
+    const currentIndex = planOrder.indexOf(currentPlan);
+    const targetIndex = planOrder.indexOf(planName);
+    
+    if (targetIndex > currentIndex) {
+      return 'Fazer Upgrade';
+    } else if (targetIndex < currentIndex) {
+      return 'Fazer Downgrade';
+    }
+    
+    // Padrão
+    return planName === 'FREE' ? 'Começar Grátis' : 'Iniciar Trial';
+  };
+  
+  const isCurrentPlan = (planName: string) => {
+    return planName === currentPlan && hasActiveSubscription;
+  };
 
   if (loading) {
     return (
@@ -168,9 +208,25 @@ const SelectPlan: React.FC = () => {
             <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 tracking-tight">
               Escolha o Plano Perfeito
             </h1>
-            <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+            <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-6">
               Desbloqueie todo o potencial da detecção de IA com nossos planos flexíveis
             </p>
+            
+            {/* Current Plan Info */}
+            {hasActiveSubscription && (
+              <div className="inline-flex items-center px-6 py-3 bg-gray-900/50 backdrop-blur-xl rounded-full border border-gray-700">
+                <div className="flex items-center space-x-3">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-gray-300">Você está no plano</span>
+                  <span className="font-bold text-white">{currentPlan}</span>
+                  {isTrialActive && (
+                    <span className="ml-2 px-2 py-1 bg-yellow-600/20 text-yellow-400 text-xs rounded-full font-medium">
+                      TRIAL ATIVO
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Plans Grid */}
@@ -181,12 +237,21 @@ const SelectPlan: React.FC = () => {
                 className={`relative group animate-fadeIn ${selectedPlan === plan.id ? 'scale-105' : ''}`}
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                {/* Popular Badge */}
-                {plan.name === 'PRO' && (
+                {/* Badges */}
+                {plan.name === 'PRO' && !isCurrentPlan(plan.name) && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-20">
                     <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-2 rounded-full text-sm font-bold shadow-lg flex items-center animate-pulse">
                       <Zap className="w-4 h-4 mr-1" />
                       Mais Popular
+                    </div>
+                  </div>
+                )}
+                
+                {isCurrentPlan(plan.name) && (
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-20">
+                    <div className="bg-gradient-to-r from-green-600 to-green-500 text-white px-6 py-2 rounded-full text-sm font-bold shadow-lg flex items-center">
+                      <Check className="w-4 h-4 mr-1" />
+                      Seu Plano Atual
                     </div>
                   </div>
                 )}
@@ -195,11 +260,13 @@ const SelectPlan: React.FC = () => {
                 <div className={`
                   h-full bg-gray-900/50 backdrop-blur-xl rounded-2xl p-8 
                   border transition-all duration-300
-                  ${plan.name === 'PRO' 
+                  ${isCurrentPlan(plan.name)
+                    ? 'border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.3)] bg-green-900/10'
+                    : plan.name === 'PRO' 
                     ? 'border-purple-500 shadow-[0_0_30px_rgba(168,85,247,0.3)]' 
                     : 'border-gray-800 hover:border-gray-700'
                   }
-                  ${selectedPlan === plan.id ? 'border-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.3)]' : ''}
+                  ${selectedPlan === plan.id && !isCurrentPlan(plan.name) ? 'border-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.3)]' : ''}
                 `}>
 
                   {/* Plan Header */}
@@ -226,11 +293,11 @@ const SelectPlan: React.FC = () => {
                       <div className="flex items-baseline justify-center">
                         <span className="text-2xl text-gray-400 mr-1">R$</span>
                         <span className="text-5xl font-bold text-white">
-                          {plan.price === 0 ? '0' : Math.floor(plan.price)}
+                          {plan.price === 0 ? '0' : formatPrice(plan.price).integer}
                         </span>
                         {plan.price > 0 && (
                           <span className="text-2xl text-gray-400 ml-1">
-                            ,{((plan.price % 1) * 100).toFixed(0).padEnd(2, '0')}
+                            ,{formatPrice(plan.price).decimal}
                           </span>
                         )}
                       </div>
@@ -280,7 +347,7 @@ const SelectPlan: React.FC = () => {
                         { key: 'prioritySupport', icon: HeadphonesIcon, label: 'Suporte Prioritário' },
                         { key: 'teamCollaboration', icon: Users, label: 'Colaboração em Equipe' },
                       ].map(({ key, icon: Icon, label }) => {
-                        const isIncluded = plan.features[key];
+                        const isIncluded = plan.features?.[key] || false;
                         return (
                           <div key={key} className="flex items-center">
                             <div className={`w-5 h-5 rounded-full flex items-center justify-center mr-3 ${
@@ -308,11 +375,13 @@ const SelectPlan: React.FC = () => {
                   {/* CTA Button */}
                   <button
                     onClick={() => handleSelectPlan(plan.id)}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isCurrentPlan(plan.name)}
                     className={`
                       w-full py-4 px-6 rounded-xl font-semibold transition-all duration-300
                       flex items-center justify-center group relative overflow-hidden
-                      ${selectedPlan === plan.id
+                      ${isCurrentPlan(plan.name)
+                        ? 'bg-green-600 text-white cursor-default'
+                        : selectedPlan === plan.id
                         ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white scale-105'
                         : plan.name === 'FREE'
                         ? 'bg-gray-800 hover:bg-gray-700 text-white'
@@ -322,11 +391,13 @@ const SelectPlan: React.FC = () => {
                         ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white'
                         : 'bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white'
                       } 
-                      ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}
+                      ${(isSubmitting || isCurrentPlan(plan.name)) ? 'opacity-75 cursor-not-allowed' : ''}
                     `}
                   >
                     {/* Button Background Effect */}
-                    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                    {!isCurrentPlan(plan.name) && (
+                      <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                    )}
                     
                     {/* Button Content */}
                     <span className="relative flex items-center">
@@ -335,9 +406,14 @@ const SelectPlan: React.FC = () => {
                           <Loader2 className="w-5 h-5 animate-spin mr-2" />
                           Processando...
                         </>
+                      ) : isCurrentPlan(plan.name) ? (
+                        <>
+                          <Check className="w-5 h-5 mr-2" />
+                          {getButtonText(plan.name)}
+                        </>
                       ) : (
                         <>
-                          {plan.price === 0 ? 'Começar Grátis' : 'Iniciar Trial'}
+                          {getButtonText(plan.name)}
                           <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                         </>
                       )}

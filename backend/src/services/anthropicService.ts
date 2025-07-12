@@ -23,7 +23,7 @@ export class AnthropicService {
   private static instance: AnthropicService;
   private readonly apiKey: string;
   private readonly baseUrl = 'https://api.anthropic.com/v1/messages';
-  private readonly model = 'claude-3-opus-20240229';
+  private readonly model = 'claude-3-haiku-20240307';
 
   private constructor() {
     this.apiKey = process.env['ANTHROPIC_API_KEY'] || '';
@@ -40,14 +40,14 @@ export class AnthropicService {
     const startTime = Date.now();
     
     // Se não há chave da API válida, usa análise mock
-    if (!this.apiKey || this.apiKey === 'your-anthropic-api-key-here' || this.apiKey === 'demo-key-for-testing' || this.apiKey.length < 10) {
+    if (!this.apiKey || this.apiKey === 'your-anthropic-api-key-here' || this.apiKey.length < 10) {
       logger.warn('⚠️ Chave da API do Anthropic não configurada ou inválida, usando análise mock');
       logger.info('💡 Para usar análise real, configure ANTHROPIC_API_KEY no arquivo .env');
       return this.mockAnalysis(textContent, title, startTime);
     }
     
     try {
-      logger.info(`🔍 Iniciando análise com Claude Opus: ${title || 'Sem título'}`);
+      logger.info(`🔍 Iniciando análise com Claude 3 Haiku: ${title || 'Sem título'}`);
 
       const prompt = this.buildAnalysisPrompt(textContent, title);
       
@@ -87,11 +87,11 @@ export class AnthropicService {
       
       const processingTime = Date.now() - startTime;
       
-      logger.info(`✅ Análise Claude Opus concluída em ${processingTime}ms`);
+      logger.info(`✅ Análise Claude 3 Haiku concluída em ${processingTime}ms`);
 
       return {
         message: 'Análise real concluída com sucesso',
-        provider: 'Claude Opus',
+        provider: 'Claude 3 Haiku',
         confidence: analysis.confidence,
         isAIGenerated: analysis.isAIGenerated,
         response: analysis.response,
@@ -104,7 +104,7 @@ export class AnthropicService {
       };
 
     } catch (error) {
-      logger.error(`❌ Erro ao analisar texto com Claude Opus:`, error);
+      logger.error(`❌ Erro ao analisar texto com Claude 3 Haiku:`, error);
       
       // Fallback para análise mock em caso de erro
       logger.warn('Usando análise mock como fallback');
@@ -176,7 +176,7 @@ INSTRUÇÕES:
 {
   "confidence": 85.5,
   "isAIGenerated": true,
-  "response": "Texto analisado usando Claude Opus com sucesso",
+  "response": "Texto analisado usando Claude 3 Haiku com sucesso",
   "reasoning": "Breve explicação do seu raciocínio"
 }
 
@@ -205,7 +205,7 @@ IMPORTANTE: Responda APENAS com o JSON válido, sem texto adicional.`;
       return {
         confidence: 75.0,
         isAIGenerated: responseText.toLowerCase().includes('ia') || responseText.toLowerCase().includes('artificial'),
-        response: 'Análise concluída com Claude Opus'
+        response: 'Análise concluída com Claude 3 Haiku'
       };
       
     } catch (error) {

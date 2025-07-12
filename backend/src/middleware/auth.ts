@@ -305,15 +305,27 @@ export const checkPlanLimits = (feature: 'analyses' | 'reports' | 'fileSize' | '
       // Verifica se precisa resetar contadores mensais
       const now = new Date();
       const lastReset = new Date(userPlan.lastResetDate);
-      const daysSinceReset = Math.floor((now.getTime() - lastReset.getTime()) / (1000 * 60 * 60 * 24));
+      
+      // Reset baseado em mudança de mês calendário, não em dias
+      const shouldReset = (
+        now.getFullYear() > lastReset.getFullYear() ||
+        (now.getFullYear() === lastReset.getFullYear() && now.getMonth() > lastReset.getMonth())
+      );
 
-      if (daysSinceReset >= 30) {
+      if (shouldReset) {
+        // Calcular início do mês atual para currentPeriodStart
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        // Calcular final do mês atual para currentPeriodEnd
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+        
         await prisma.userPlan.update({
           where: { id: userPlan.id },
           data: {
             analysesUsed: 0,
             reportsUsed: 0,
-            lastResetDate: now
+            lastResetDate: now,
+            currentPeriodStart: monthStart,
+            currentPeriodEnd: monthEnd
           }
         });
       }

@@ -1,0 +1,119 @@
+# Dockerfile de Desenvolvimento para Frontend TrueCheckIA
+# Suporte a hot reload e desenvolvimento
+
+# Stage 1: Base image
+FROM node:18-alpine AS base
+
+# Instalar dependências do sistema
+RUN apk add --no-cache \
+    curl \
+    bash \
+    git \
+    && rm -rf /var/cache/apk/*
+
+# Criar usuário não-root
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nodeuser -u 1001
+
+# Definir diretório de trabalho
+WORKDIR /app
+
+# Copiar package files
+COPY package*.json ./
+
+# Stage 2: Development
+FROM base AS development
+
+# Instalar todas as dependências (incluindo devDependencies)
+RUN npm ci --include=dev
+
+# Instalar Vite globalmente
+RUN npm install -g vite
+
+# Mudar ownership para nodeuser
+RUN chown -R nodeuser:nodejs /app
+
+# Criar script de entrada para desenvolvimento
+RUN cat > /app/entrypoint.dev.sh << 'EOF'
+#!/bin/bash
+set -e
+
+echo "🚀 Iniciando TrueCheckIA Frontend (Desenvolvimento)"
+
+# Verificar se node_modules existe
+if [ ! -d "node_modules" ]; then
+    echo "📦 Instalando dependências..."
+    npm ci --include=dev
+fi
+
+# Aguardar backend estar disponível (opcional)
+if [ ! -z "$BACKEND_HOST" ]; then
+    echo "⏳ Aguardando backend em $BACKEND_HOST..."
+    timeout 60s sh -c 'until curl -f http://$BACKEND_HOST:$BACKEND_PORT/health; do sleep 2; done' || echo "⚠️ Backend não disponível"
+fi
+
+# Iniciar servidor de desenvolvimento Vite
+echo "🌟 Iniciando Vite dev server..."
+exec npm run dev -- --host 0.0.0.0 --port 3000
+EOF
+
+RUN chmod +x /app/entrypoint.dev.sh
+
+# Mudar para usuário não-root
+USER nodeuser
+
+# Expor porta
+EXPOSE 3000
+
+# Variáveis de ambiente para desenvolvimento
+ENV NODE_ENV=development
+ENV CHOKIDAR_USEPOLLING=true
+ENV WATCHPACK_POLLING=true
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:3000 || exit 1
+
+# Comando padrão
+CMD ["/app/entrypoint.dev.sh"]
+
+# Stage 3: Build (para gerar build de produção)
+FROM base AS build
+
+ENV NODE_ENV=production
+
+# Instalar dependências
+RUN npm ci --only=production --no-audit
+
+# Copiar código fonte
+COPY --chown=nodeuser:nodejs . .
+
+# Build da aplicação
+RUN npm run build
+
+# Stage 4: Production (servidor nginx)
+FROM nginx:alpine AS production
+
+# Copiar configuração nginx customizada
+COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
+
+# Copiar build do frontend
+COPY --from=build /app/dist /var/www/html
+
+# Criar usuário nginx se não existir
+RUN addgroup -g 101 -S nginx || true
+RUN adduser -S -D -H -u 101 -h /var/cache/nginx -s /sbin/nologin -G nginx -g nginx nginx || true
+
+# Configurar permissões
+RUN chown -R nginx:nginx /var/www/html
+RUN chmod -R 755 /var/www/html
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost || exit 1
+
+# Expor porta
+EXPOSE 80
+
+# Comando de produção
+CMD ["nginx", "-g", "daemon off;"]
