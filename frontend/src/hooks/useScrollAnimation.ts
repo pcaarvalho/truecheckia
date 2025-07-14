@@ -7,11 +7,7 @@ interface UseScrollAnimationOptions {
 }
 
 export const useScrollAnimation = (options: UseScrollAnimationOptions = {}) => {
-  const {
-    threshold = 0.1,
-    rootMargin = '0px',
-    triggerOnce = true
-  } = options;
+  const { threshold = 0.1, rootMargin = '0px', triggerOnce = true } = options;
 
   const [isVisible, setIsVisible] = useState(false);
   const [hasTriggered, setHasTriggered] = useState(false);
@@ -31,7 +27,7 @@ export const useScrollAnimation = (options: UseScrollAnimationOptions = {}) => {
       },
       {
         threshold,
-        rootMargin
+        rootMargin,
       }
     );
 
@@ -59,13 +55,13 @@ export const useScrollPosition = () => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       setScrollY(currentScrollY);
-      
+
       if (currentScrollY > lastScrollY) {
         setScrollDirection('down');
       } else {
         setScrollDirection('up');
       }
-      
+
       setLastScrollY(currentScrollY);
     };
 
@@ -83,7 +79,6 @@ export const useParallax = (speed: number = 0.5) => {
   useEffect(() => {
     const handleScroll = () => {
       if (ref.current) {
-        const rect = ref.current.getBoundingClientRect();
         const scrolled = window.pageYOffset;
         const rate = scrolled * -speed;
         setOffset(rate);
@@ -110,4 +105,4 @@ export const useStickyHeader = (threshold: number = 100) => {
   }, [threshold]);
 
   return isSticky;
-}; 
+};

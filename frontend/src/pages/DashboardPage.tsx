@@ -1,168 +1,164 @@
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { 
-  FileText, 
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import {
+  FileText,
   Upload,
   History,
-  TrendingUp, 
-  Clock, 
-  CheckCircle, 
+  Clock,
+  CheckCircle,
   XCircle,
   BarChart3,
   Activity,
   AlertTriangle,
   Zap,
   Eye,
-  Sparkles
-} from 'lucide-react'
-import { useAuth } from '../contexts/AuthContext'
-import { useSocket } from '../contexts/SocketContext'
-import { authService } from '../services/api'
-import { FileUpload } from '../components/upload/FileUpload'
-import { PlanStatusCard } from '../components/dashboard/PlanStatusCard'
-import { QuotaUsageCard } from '../components/dashboard/QuotaUsageCard'
-import { QuickActions } from '../components/dashboard/QuickActions'
-import { StatsOverview } from '../components/dashboard/StatsOverview'
-import { OnboardingModal } from '../components/onboarding/OnboardingModal'
-import { WelcomeBanner } from '../components/onboarding/WelcomeBanner'
-import { useOnboarding } from '../hooks/useOnboarding'
-import toast from 'react-hot-toast'
+  Sparkles,
+} from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { authService } from '../services/api';
+import { FileUpload } from '../components/upload/FileUpload';
+import { PlanStatusCard } from '../components/dashboard/PlanStatusCard';
+import { QuotaUsageCard } from '../components/dashboard/QuotaUsageCard';
+import { QuickActions } from '../components/dashboard/QuickActions';
+import { StatsOverview } from '../components/dashboard/StatsOverview';
+import { OnboardingModal } from '../components/onboarding/OnboardingModal';
+import { WelcomeBanner } from '../components/onboarding/WelcomeBanner';
+import { useOnboarding } from '../hooks/useOnboarding';
+import toast from 'react-hot-toast';
 
 interface AnalysisResult {
-  message: string
-  provider: string
-  confidence: number
-  isAIGenerated: boolean
-  response: string
-  analysisId: string
+  message: string;
+  provider: string;
+  confidence: number;
+  isAIGenerated: boolean;
+  response: string;
+  analysisId: string;
 }
 
 interface Analysis {
-  id: string
-  title: string
-  textContent?: string
-  confidence: number
-  isAIGenerated: boolean
-  status: string
-  createdAt: string
-  metadata?: string
+  id: string;
+  title: string;
+  textContent?: string;
+  confidence: number;
+  isAIGenerated: boolean;
+  status: string;
+  createdAt: string;
+  metadata?: string;
 }
 
 export const DashboardPage = () => {
-  const { user } = useAuth()
-  const { socket, connected: isConnected } = useSocket()
-  const { showOnboarding, closeOnboarding, resetOnboarding } = useOnboarding()
-  
-  const [activeTab, setActiveTab] = useState<'analyze' | 'upload' | 'history'>('analyze')
-  const [isLoading, setIsLoading] = useState(false)
-  
+  const { user } = useAuth();
+  const { showOnboarding, closeOnboarding, resetOnboarding } = useOnboarding();
+
+  const [activeTab, setActiveTab] = useState<'analyze' | 'upload' | 'history'>('analyze');
+  const [isLoading, setIsLoading] = useState(false);
+
   // Estado da análise de texto
-  const [textContent, setTextContent] = useState('')
-  const [title, setTitle] = useState('')
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
-  
+  const [textContent, setTextContent] = useState('');
+  const [title, setTitle] = useState('');
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+
   // Estado do histórico
-  const [analyses, setAnalyses] = useState<Analysis[]>([])
-  const [historyLoading, setHistoryLoading] = useState(false)
+  const [analyses, setAnalyses] = useState<Analysis[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   // Carregar histórico ao montar
   useEffect(() => {
-    loadAnalysisHistory()
-  }, [])
+    loadAnalysisHistory();
+  }, []);
 
   const loadAnalysisHistory = async () => {
     try {
-      setHistoryLoading(true)
-      const response = await authService.get('/api/analysis?limit=10')
-      setAnalyses(response.data.analyses || [])
+      setHistoryLoading(true);
+      const response = await authService.get('/api/analysis?limit=10');
+      setAnalyses(response.data.analyses || []);
     } catch (error: any) {
-      console.error('Erro ao carregar histórico:', error)
-      
-              // Mensagens de erro amigáveis para histórico
-        if (!navigator.onLine) {
-          toast.error('Sem conexão com a internet. Verifique sua rede.')
-        } else {
-          // Não mostra erro para histórico - apenas loga
-          console.warn('Não foi possível carregar o histórico')
-        }
+      console.error('Erro ao carregar histórico:', error);
+
+      // Mensagens de erro amigáveis para histórico
+      if (!navigator.onLine) {
+        toast.error('Sem conexão com a internet. Verifique sua rede.');
+      } else {
+        // Não mostra erro para histórico - apenas loga
+        console.warn('Não foi possível carregar o histórico');
+      }
     } finally {
-      setHistoryLoading(false)
+      setHistoryLoading(false);
     }
-  }
+  };
 
   const analyzeText = async () => {
     // Validação melhorada
     if (!textContent.trim()) {
-      toast.error('Por favor, insira um texto para análise')
-      return
+      toast.error('Por favor, insira um texto para análise');
+      return;
     }
-    
+
     if (textContent.trim().length < 50) {
-      toast.error('Por favor, insira pelo menos 50 caracteres para uma análise mais precisa')
-      return
+      toast.error('Por favor, insira pelo menos 50 caracteres para uma análise mais precisa');
+      return;
     }
 
     try {
-      setIsLoading(true)
-      setAnalysisResult(null)
-      
+      setIsLoading(true);
+      setAnalysisResult(null);
+
       const response = await authService.post('/api/analysis/text', {
         textContent: textContent.trim(),
-        title: title.trim() || undefined
-      })
+        title: title.trim() || undefined,
+      });
 
-      setAnalysisResult(response.data)
-      toast.success('Análise concluída com sucesso!')
-      
+      setAnalysisResult(response.data);
+      toast.success('Análise concluída com sucesso!');
+
       // Recarregar histórico
-      await loadAnalysisHistory()
-      
+      await loadAnalysisHistory();
     } catch (error: any) {
-      console.error('Erro na análise:', error)
-      
+      console.error('Erro na análise:', error);
+
       // Mensagens de erro amigáveis com toast
       if (!navigator.onLine) {
-        toast.error('Verifique sua conexão com a internet e tente novamente')
+        toast.error('Verifique sua conexão com a internet e tente novamente');
       } else if (error.response?.status >= 500) {
-        toast.error('Estamos com alta demanda no momento. Tente novamente em alguns segundos')
+        toast.error('Estamos com alta demanda no momento. Tente novamente em alguns segundos');
       } else if (error.response?.status === 429) {
-        toast.error('Muitas tentativas. Aguarde alguns minutos antes de tentar novamente')
+        toast.error('Muitas tentativas. Aguarde alguns minutos antes de tentar novamente');
       } else {
-        toast.error('Não foi possível analisar o texto. Tente novamente em alguns segundos')
+        toast.error('Não foi possível analisar o texto. Tente novamente em alguns segundos');
       }
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const clearForm = () => {
-    setTextContent('')
-    setTitle('')
-    setAnalysisResult(null)
-  }
+    setTextContent('');
+    setTitle('');
+    setAnalysisResult(null);
+  };
 
   const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 80) return 'text-green-400'
-    if (confidence >= 60) return 'text-yellow-400'
-    return 'text-red-400'
-  }
+    if (confidence >= 80) return 'text-green-400';
+    if (confidence >= 60) return 'text-yellow-400';
+    return 'text-red-400';
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'COMPLETED':
-        return <CheckCircle size={16} className="text-green-500" />
+        return <CheckCircle size={16} className="text-green-500" />;
       case 'FAILED':
-        return <XCircle size={16} className="text-red-500" />
+        return <XCircle size={16} className="text-red-500" />;
       case 'PROCESSING':
-        return <Activity size={16} className="text-blue-500 animate-pulse" />
+        return <Activity size={16} className="text-blue-500 animate-pulse" />;
       default:
-        return <Clock size={16} className="text-yellow-500" />
+        return <Clock size={16} className="text-yellow-500" />;
     }
-  }
+  };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('pt-BR')
-  }
+    return new Date(dateString).toLocaleString('pt-BR');
+  };
 
   return (
     <div className="space-y-6 p-6">
@@ -200,7 +196,7 @@ export const DashboardPage = () => {
         >
           <PlanStatusCard />
         </motion.div>
-        
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -236,8 +232,8 @@ export const DashboardPage = () => {
         <button
           onClick={() => setActiveTab('analyze')}
           className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-colors ${
-            activeTab === 'analyze' 
-              ? 'bg-blue-600 text-white' 
+            activeTab === 'analyze'
+              ? 'bg-blue-600 text-white'
               : 'text-gray-400 hover:text-white hover:bg-slate-700'
           }`}
         >
@@ -246,18 +242,20 @@ export const DashboardPage = () => {
         </button>
         <button
           onClick={() => setActiveTab('upload')}
-          disabled={true}
-          className="flex items-center space-x-2 px-4 py-2 rounded-md transition-colors text-gray-500 cursor-not-allowed bg-slate-700 opacity-50"
-          title="Funcionalidade em desenvolvimento"
+          className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-colors ${
+            activeTab === 'upload'
+              ? 'bg-blue-600 text-white'
+              : 'text-gray-400 hover:text-white hover:bg-slate-700'
+          }`}
         >
           <Upload size={18} />
-          <span>Upload Arquivo (Em breve)</span>
+          <span>Upload Arquivo</span>
         </button>
         <button
           onClick={() => setActiveTab('history')}
           className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-colors ${
-            activeTab === 'history' 
-              ? 'bg-blue-600 text-white' 
+            activeTab === 'history'
+              ? 'bg-blue-600 text-white'
               : 'text-gray-400 hover:text-white hover:bg-slate-700'
           }`}
         >
@@ -282,7 +280,7 @@ export const DashboardPage = () => {
                 <FileText className="mr-2 text-blue-400" size={24} />
                 Análise de Texto
               </h2>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -291,20 +289,20 @@ export const DashboardPage = () => {
                   <input
                     type="text"
                     value={title}
-                    onChange={(e) => setTitle(e.target.value)}
+                    onChange={e => setTitle(e.target.value)}
                     placeholder="Título do texto para análise"
                     className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     maxLength={200}
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Texto para Análise (mínimo 50 caracteres recomendado)
                   </label>
                   <textarea
                     value={textContent}
-                    onChange={(e) => setTextContent(e.target.value)}
+                    onChange={e => setTextContent(e.target.value)}
                     placeholder="Cole aqui o texto que deseja analisar... (mínimo 50 caracteres para melhor precisão)"
                     className="w-full h-40 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
                     maxLength={50000}
@@ -318,7 +316,7 @@ export const DashboardPage = () => {
                     )}
                   </div>
                 </div>
-                
+
                 <div className="flex space-x-3">
                   <button
                     onClick={analyzeText}
@@ -342,7 +340,7 @@ export const DashboardPage = () => {
                       </>
                     )}
                   </button>
-                  
+
                   <button
                     onClick={clearForm}
                     className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition-colors"
@@ -359,15 +357,17 @@ export const DashboardPage = () => {
                 <BarChart3 className="mr-2 text-green-400" size={24} />
                 Resultado da Análise
               </h2>
-              
+
               {analysisResult ? (
                 <div className="space-y-4">
                   {/* Status Card */}
-                  <div className={`p-4 rounded-lg border-2 ${
-                    analysisResult.isAIGenerated 
-                      ? 'bg-red-900/20 border-red-500/50' 
-                      : 'bg-green-900/20 border-green-500/50'
-                  }`}>
+                  <div
+                    className={`p-4 rounded-lg border-2 ${
+                      analysisResult.isAIGenerated
+                        ? 'bg-red-900/20 border-red-500/50'
+                        : 'bg-green-900/20 border-green-500/50'
+                    }`}
+                  >
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-semibold text-white">
                         {analysisResult.isAIGenerated ? 'IA Detectada' : 'Conteúdo Humano'}
@@ -383,9 +383,7 @@ export const DashboardPage = () => {
                         {analysisResult.confidence.toFixed(1)}%
                       </span>
                     </div>
-                    <div className="text-sm text-gray-400">
-                      Confiança da análise
-                    </div>
+                    <div className="text-sm text-gray-400">Confiança da análise</div>
                   </div>
 
                   {/* Provider */}
@@ -404,24 +402,20 @@ export const DashboardPage = () => {
 
                   {/* Message */}
                   <div className="bg-blue-900/20 p-3 rounded-lg border border-blue-500/30">
-                    <div className="text-blue-300 text-sm">
-                      {analysisResult.message}
-                    </div>
+                    <div className="text-blue-300 text-sm">{analysisResult.message}</div>
                   </div>
                 </div>
               ) : (
                 <div className="text-center py-8">
                   <Eye size={48} className="mx-auto text-gray-500 mb-4" />
-                  <p className="text-gray-400">
-                    Os resultados da análise aparecerão aqui
-                  </p>
+                  <p className="text-gray-400">Os resultados da análise aparecerão aqui</p>
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {/* Upload de Arquivo - DESABILITADO */}
+        {/* Upload de Arquivo */}
         {activeTab === 'upload' && (
           <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
             <h2 className="text-xl font-semibold text-white mb-6 flex items-center">
@@ -430,7 +424,8 @@ export const DashboardPage = () => {
             </h2>
             <div className="space-y-4">
               <p className="text-slate-300 mb-4">
-                Arraste e solte arquivos para análise automática de IA. Suporta imagens, vídeos, documentos e mais.
+                Arraste e solte arquivos para análise automática de IA. Suporta imagens, vídeos,
+                documentos e mais.
               </p>
               <FileUpload />
             </div>
@@ -453,50 +448,53 @@ export const DashboardPage = () => {
                 {historyLoading ? 'Carregando...' : 'Atualizar'}
               </button>
             </div>
-            
+
             {historyLoading ? (
               <div className="text-center py-8">
                 <Activity size={32} className="mx-auto text-blue-500 animate-spin mb-4" />
                 <p className="text-gray-400">Carregando histórico...</p>
               </div>
             ) : analyses.length > 0 ? (
-            <div className="space-y-4">
-                {analyses.map((analysis) => (
-                  <div key={analysis.id} className="bg-slate-700 p-4 rounded-lg border border-slate-600">
+              <div className="space-y-4">
+                {analyses.map(analysis => (
+                  <div
+                    key={analysis.id}
+                    className="bg-slate-700 p-4 rounded-lg border border-slate-600"
+                  >
                     <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-3">
                         {getStatusIcon(analysis.status)}
-                    <div>
+                        <div>
                           <h3 className="text-white font-medium">
                             {analysis.title || 'Análise sem título'}
                           </h3>
-                          <p className="text-xs text-gray-400">
-                            {formatDate(analysis.createdAt)}
-                      </p>
-                    </div>
-                  </div>
-                  
-                    {analysis.status === 'COMPLETED' && (
-                      <div className="text-right">
-                          <div className={`text-sm font-medium ${getConfidenceColor(analysis.confidence)}`}>
-                          {analysis.confidence.toFixed(1)}%
+                          <p className="text-xs text-gray-400">{formatDate(analysis.createdAt)}</p>
                         </div>
+                      </div>
+
+                      {analysis.status === 'COMPLETED' && (
+                        <div className="text-right">
+                          <div
+                            className={`text-sm font-medium ${getConfidenceColor(analysis.confidence)}`}
+                          >
+                            {analysis.confidence.toFixed(1)}%
+                          </div>
                           <div className="text-xs text-gray-400">
-                          {analysis.isAIGenerated ? 'IA Detectada' : 'Humano'}
+                            {analysis.isAIGenerated ? 'IA Detectada' : 'Humano'}
                           </div>
                         </div>
                       )}
                     </div>
-                    
+
                     {analysis.textContent && (
                       <div className="mt-3 p-3 bg-slate-800 rounded text-sm text-gray-300">
                         {analysis.textContent.substring(0, 150)}
                         {analysis.textContent.length > 150 && '...'}
                       </div>
                     )}
-                </div>
-              ))}
-            </div>
+                  </div>
+                ))}
+              </div>
             ) : (
               <div className="text-center py-8">
                 <History size={48} className="mx-auto text-gray-500 mb-4" />
@@ -504,17 +502,14 @@ export const DashboardPage = () => {
                 <p className="text-sm text-gray-500 mt-2">
                   Faça sua primeira análise de texto para ver o histórico
                 </p>
-            </div>
+              </div>
             )}
           </div>
         )}
       </motion.div>
 
       {/* Onboarding Modal */}
-      <OnboardingModal 
-        isOpen={showOnboarding} 
-        onClose={closeOnboarding} 
-      />
+      <OnboardingModal isOpen={showOnboarding} onClose={closeOnboarding} />
     </div>
-  )
-} 
+  );
+};

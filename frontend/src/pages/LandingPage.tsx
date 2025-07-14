@@ -1,28 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Shield, 
-  Zap, 
-  BarChart3, 
-  Users, 
+import { useState, useEffect } from 'react';
+import {
+  Zap,
   ArrowRight,
   Play,
   CheckCircle,
   Star,
   Globe,
-  Target,
   Brain,
   Lock,
-  Sparkles,
-  TrendingUp,
-  Award,
-  ChevronDown,
   Menu,
   X,
-  Download,
   Mail,
   Phone,
   MapPin,
-  ExternalLink
+  ExternalLink,
 } from 'lucide-react';
 import ParticleBackground from '../components/landing/ParticleBackground';
 import AnimatedCounter from '../components/landing/AnimatedCounter';
@@ -38,7 +29,7 @@ const LandingPage = () => {
   useEffect(() => {
     const handleScroll = () => {
       setScrollY(window.scrollY);
-      
+
       // Detectar seção ativa
       const sections = ['hero', 'features', 'use-cases', 'testimonials', 'pricing', 'contact'];
       const currentSection = sections.find(section => {
@@ -49,7 +40,7 @@ const LandingPage = () => {
         }
         return false;
       });
-      
+
       if (currentSection) {
         setActiveSection(currentSection);
       }
@@ -63,41 +54,44 @@ const LandingPage = () => {
     {
       icon: Brain,
       title: 'IA Avançada',
-      description: 'Algoritmos de deep learning treinados com milhões de amostras para máxima precisão.',
+      description:
+        'Algoritmos de deep learning treinados com milhões de amostras para máxima precisão.',
       gradient: 'from-blue-500 to-cyan-500',
-      details: ['99.7% de precisão', 'Análise em tempo real', 'Suporte a 50+ idiomas']
+      details: ['99.7% de precisão', 'Análise em tempo real', 'Suporte a 50+ idiomas'],
     },
     {
       icon: Zap,
       title: 'Velocidade Relâmpago',
-      description: 'Análise em tempo real com resultados instantâneos para qualquer tipo de conteúdo.',
+      description:
+        'Análise em tempo real com resultados instantâneos para qualquer tipo de conteúdo.',
       gradient: 'from-yellow-500 to-orange-500',
-      details: ['< 15 segundos', 'Processamento paralelo', 'API otimizada']
+      details: ['< 15 segundos', 'Processamento paralelo', 'API otimizada'],
     },
     {
       icon: Lock,
       title: 'Segurança Total',
       description: 'Criptografia end-to-end e política de zero logs para máxima privacidade.',
       gradient: 'from-green-500 to-emerald-500',
-      details: ['Criptografia AES-256', 'Zero logs', 'Conformidade com GDPR']
+      details: ['Criptografia AES-256', 'Zero logs', 'Conformidade com GDPR'],
     },
     {
       icon: Globe,
       title: 'Suporte Global',
       description: 'Detecção em 50+ idiomas com precisão cultural e contextual.',
       gradient: 'from-purple-500 to-pink-500',
-      details: ['50+ idiomas', 'Contexto cultural', 'Suporte 24/7']
-    }
+      details: ['50+ idiomas', 'Contexto cultural', 'Suporte 24/7'],
+    },
   ];
 
   const useCases = [
     {
       title: 'Educação',
-      description: 'Mantenha a integridade acadêmica detectando trabalhos gerados por IA automaticamente.',
+      description:
+        'Mantenha a integridade acadêmica detectando trabalhos gerados por IA automaticamente.',
       icon: '🎓',
       stats: '95% das universidades confiam',
       color: 'from-blue-600 to-blue-700',
-      benefits: ['Verificação automática', 'Relatórios detalhados', 'Integração LMS']
+      benefits: ['Verificação automática', 'Relatórios detalhados', 'Integração LMS'],
     },
     {
       title: 'Jornalismo',
@@ -105,7 +99,7 @@ const LandingPage = () => {
       icon: '📰',
       stats: '200+ redações ativas',
       color: 'from-emerald-600 to-emerald-700',
-      benefits: ['Verificação em tempo real', 'API para redações', 'Dashboard analítico']
+      benefits: ['Verificação em tempo real', 'API para redações', 'Dashboard analítico'],
     },
     {
       title: 'Empresas',
@@ -113,7 +107,7 @@ const LandingPage = () => {
       icon: '🏢',
       stats: '85% de redução em riscos',
       color: 'from-purple-600 to-purple-700',
-      benefits: ['Proteção de marca', 'Compliance automático', 'Alertas em tempo real']
+      benefits: ['Proteção de marca', 'Compliance automático', 'Alertas em tempo real'],
     },
     {
       title: 'Pesquisa',
@@ -121,42 +115,45 @@ const LandingPage = () => {
       icon: '🔬',
       stats: '1M+ papers verificados',
       color: 'from-orange-600 to-orange-700',
-      benefits: ['Verificação de papers', 'Plágio detectado', 'Relatórios acadêmicos']
-    }
+      benefits: ['Verificação de papers', 'Plágio detectado', 'Relatórios acadêmicos'],
+    },
   ];
 
   const stats = [
     { number: 99.7, label: 'Precisão', subtext: 'Taxa de acerto', suffix: '%' },
     { number: 15, label: 'Velocidade', subtext: 'Tempo médio', suffix: 's' },
     { number: 2500000, label: 'Análises', subtext: 'Já realizadas', suffix: '+' },
-    { number: 120, label: 'Países', subtext: 'Atendidos', suffix: '+' }
+    { number: 120, label: 'Países', subtext: 'Atendidos', suffix: '+' },
   ];
 
   const testimonials = [
     {
       name: 'Dr. Maria Silva',
       role: 'Diretora Acadêmica - USP',
-      content: 'Revolucionou nossa forma de verificar trabalhos acadêmicos. A precisão é impressionante e a interface é intuitiva.',
+      content:
+        'Revolucionou nossa forma de verificar trabalhos acadêmicos. A precisão é impressionante e a interface é intuitiva.',
       rating: 5,
       avatar: '👩‍🏫',
-      company: 'Universidade de São Paulo'
+      company: 'Universidade de São Paulo',
     },
     {
       name: 'João Santos',
       role: 'Editor-chefe - Folha Digital',
-      content: 'Ferramenta essencial para nossa redação. Detecta deepfakes e textos gerados com facilidade. Economizamos horas de verificação manual.',
+      content:
+        'Ferramenta essencial para nossa redação. Detecta deepfakes e textos gerados com facilidade. Economizamos horas de verificação manual.',
       rating: 5,
       avatar: '👨‍💼',
-      company: 'Folha Digital'
+      company: 'Folha Digital',
     },
     {
       name: 'Ana Costa',
       role: 'CMO - TechCorp',
-      content: 'Protege nossa marca 24/7. Interface intuitiva e resultados confiáveis sempre. ROI impressionante em apenas 3 meses.',
+      content:
+        'Protege nossa marca 24/7. Interface intuitiva e resultados confiáveis sempre. ROI impressionante em apenas 3 meses.',
       rating: 5,
       avatar: '👩‍💻',
-      company: 'TechCorp'
-    }
+      company: 'TechCorp',
+    },
   ];
 
   const pricingPlans = [
@@ -165,14 +162,9 @@ const LandingPage = () => {
       price: 'R$ 29,99',
       period: '/mês',
       description: 'Perfeito para pequenas equipes',
-      features: [
-        '1.000 análises/mês',
-        'Suporte por email',
-        'API básica',
-        'Relatórios básicos'
-      ],
+      features: ['1.000 análises/mês', 'Suporte por email', 'API básica', 'Relatórios básicos'],
       popular: false,
-      gradient: 'from-gray-500 to-gray-600'
+      gradient: 'from-gray-500 to-gray-600',
     },
     {
       name: 'Profissional',
@@ -184,10 +176,10 @@ const LandingPage = () => {
         'Suporte prioritário',
         'API completa',
         'Relatórios avançados',
-        'Integração customizada'
+        'Integração customizada',
       ],
       popular: true,
-      gradient: 'from-blue-500 to-purple-600'
+      gradient: 'from-blue-500 to-purple-600',
     },
     {
       name: 'Corporativo',
@@ -200,11 +192,11 @@ const LandingPage = () => {
         'API enterprise',
         'Relatórios customizados',
         'Integração dedicada',
-        'SLA garantido'
+        'SLA garantido',
       ],
       popular: false,
-      gradient: 'from-purple-500 to-pink-600'
-    }
+      gradient: 'from-purple-500 to-pink-600',
+    },
   ];
 
   const scrollToSection = (sectionId: string) => {
@@ -219,11 +211,15 @@ const LandingPage = () => {
     <div className="landing-page">
       {/* Background Particles */}
       <ParticleBackground />
-      
+
       {/* Navigation */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrollY > 50 ? 'bg-slate-900/95 backdrop-blur-md border-b border-slate-800' : 'bg-transparent'
-      }`}>
+      <nav
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          scrollY > 50
+            ? 'bg-slate-900/95 backdrop-blur-md border-b border-slate-800'
+            : 'bg-transparent'
+        }`}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
@@ -238,19 +234,21 @@ const LandingPage = () => {
             {/* Desktop Navigation */}
             <div className="hidden md:block">
               <div className="ml-10 flex items-baseline space-x-8">
-                {['hero', 'features', 'use-cases', 'testimonials', 'pricing', 'contact'].map((section) => (
-                  <button
-                    key={section}
-                    onClick={() => scrollToSection(section)}
-                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      activeSection === section
-                        ? 'text-blue-400 bg-slate-800'
-                        : 'text-slate-300 hover:text-white hover:bg-slate-800'
-                    }`}
-                  >
-                    {section.charAt(0).toUpperCase() + section.slice(1).replace('-', ' ')}
-                  </button>
-                ))}
+                {['hero', 'features', 'use-cases', 'testimonials', 'pricing', 'contact'].map(
+                  section => (
+                    <button
+                      key={section}
+                      onClick={() => scrollToSection(section)}
+                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        activeSection === section
+                          ? 'text-blue-400 bg-slate-800'
+                          : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                      }`}
+                    >
+                      {section.charAt(0).toUpperCase() + section.slice(1).replace('-', ' ')}
+                    </button>
+                  )
+                )}
               </div>
             </div>
 
@@ -263,7 +261,7 @@ const LandingPage = () => {
                 Contato
               </button>
               <button
-                onClick={() => window.location.href = '/login'}
+                onClick={() => (window.location.href = '/login')}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
               >
                 Entrar
@@ -286,22 +284,24 @@ const LandingPage = () => {
         {isMenuOpen && (
           <div className="md:hidden bg-slate-900/95 backdrop-blur-md border-b border-slate-800">
             <div className="px-2 pt-2 pb-3 space-y-1">
-              {['hero', 'features', 'use-cases', 'testimonials', 'pricing', 'contact'].map((section) => (
-                <button
-                  key={section}
-                  onClick={() => scrollToSection(section)}
-                  className={`block w-full text-left px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                    activeSection === section
-                      ? 'text-blue-400 bg-slate-800'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800'
-                  }`}
-                >
-                  {section.charAt(0).toUpperCase() + section.slice(1).replace('-', ' ')}
-                </button>
-              ))}
+              {['hero', 'features', 'use-cases', 'testimonials', 'pricing', 'contact'].map(
+                section => (
+                  <button
+                    key={section}
+                    onClick={() => scrollToSection(section)}
+                    className={`block w-full text-left px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                      activeSection === section
+                        ? 'text-blue-400 bg-slate-800'
+                        : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                    }`}
+                  >
+                    {section.charAt(0).toUpperCase() + section.slice(1).replace('-', ' ')}
+                  </button>
+                )
+              )}
               <div className="pt-4 pb-3 border-t border-slate-800">
                 <button
-                  onClick={() => window.location.href = '/login'}
+                  onClick={() => (window.location.href = '/login')}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                 >
                   Entrar
@@ -313,7 +313,10 @@ const LandingPage = () => {
       </nav>
 
       {/* Hero Section */}
-      <section id="hero" className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      <section
+        id="hero"
+        className="relative min-h-screen flex items-center justify-center overflow-hidden"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <div className="animate-fade-in-up">
             <h1 className="text-5xl md:text-7xl font-bold mb-6">
@@ -323,9 +326,9 @@ const LandingPage = () => {
               <br />
               <span className="text-white">Com Precisão</span>
             </h1>
-            
+
             <p className="text-xl md:text-2xl text-slate-300 mb-8 max-w-3xl mx-auto">
-              Plataforma avançada de detecção de conteúdo gerado por inteligência artificial. 
+              Plataforma avançada de detecção de conteúdo gerado por inteligência artificial.
               Proteja sua marca, mantenha a integridade acadêmica e combata a desinformação.
             </p>
 
@@ -337,9 +340,9 @@ const LandingPage = () => {
                 <Play size={20} />
                 <span>Ver Demonstração</span>
               </button>
-              
+
               <button
-                onClick={() => window.location.href = '/register'}
+                onClick={() => (window.location.href = '/register')}
                 className="btn-secondary flex items-center space-x-2"
               >
                 <span>Começar Gratuitamente</span>
@@ -352,11 +355,7 @@ const LandingPage = () => {
               {stats.map((stat, index) => (
                 <div key={index} className="text-center">
                   <div className="text-3xl md:text-4xl font-bold text-blue-400 mb-2">
-                    <AnimatedCounter 
-                      end={stat.number} 
-                      duration={2} 
-                      suffix={stat.suffix}
-                    />
+                    <AnimatedCounter end={stat.number} duration={2} suffix={stat.suffix} />
                   </div>
                   <div className="text-slate-400 text-sm">{stat.label}</div>
                   <div className="text-slate-500 text-xs">{stat.subtext}</div>
@@ -375,7 +374,8 @@ const LandingPage = () => {
               Por que escolher a <span className="text-blue-400">TrueCheckIA</span>?
             </h2>
             <p className="text-xl text-slate-300 max-w-3xl mx-auto">
-              Tecnologia de ponta combinada com interface intuitiva para máxima eficiência na detecção de IA.
+              Tecnologia de ponta combinada com interface intuitiva para máxima eficiência na
+              detecção de IA.
             </p>
           </div>
 
@@ -385,13 +385,15 @@ const LandingPage = () => {
                 key={index}
                 className="card hover:transform hover:scale-105 transition-all duration-300"
               >
-                <div className={`w-16 h-16 rounded-xl bg-gradient-to-r ${feature.gradient} flex items-center justify-center mb-6`}>
+                <div
+                  className={`w-16 h-16 rounded-xl bg-gradient-to-r ${feature.gradient} flex items-center justify-center mb-6`}
+                >
                   <feature.icon size={32} className="text-white" />
                 </div>
-                
+
                 <h3 className="text-xl font-semibold text-white mb-4">{feature.title}</h3>
                 <p className="text-slate-300 mb-6">{feature.description}</p>
-                
+
                 <ul className="space-y-2">
                   {feature.details.map((detail, detailIndex) => (
                     <li key={detailIndex} className="flex items-center text-sm text-slate-400">
@@ -430,7 +432,7 @@ const LandingPage = () => {
                     <h3 className="text-2xl font-bold text-white mb-2">{useCase.title}</h3>
                     <p className="text-slate-200 mb-4">{useCase.description}</p>
                     <div className="text-blue-200 font-semibold mb-4">{useCase.stats}</div>
-                    
+
                     <ul className="space-y-2">
                       {useCase.benefits.map((benefit, benefitIndex) => (
                         <li key={benefitIndex} className="flex items-center text-sm text-slate-200">
@@ -461,7 +463,10 @@ const LandingPage = () => {
 
           <div className="grid md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <div key={index} className="card hover:transform hover:scale-105 transition-all duration-300">
+              <div
+                key={index}
+                className="card hover:transform hover:scale-105 transition-all duration-300"
+              >
                 <div className="flex items-center mb-6">
                   <div className="text-3xl mr-4">{testimonial.avatar}</div>
                   <div>
@@ -470,9 +475,9 @@ const LandingPage = () => {
                     <p className="text-blue-400 text-sm">{testimonial.company}</p>
                   </div>
                 </div>
-                
+
                 <p className="text-slate-300 mb-4">{testimonial.content}</p>
-                
+
                 <div className="flex items-center">
                   {[...Array(testimonial.rating)].map((_, i) => (
                     <Star key={i} size={16} className="text-yellow-400 fill-current" />
@@ -509,7 +514,7 @@ const LandingPage = () => {
                     </span>
                   </div>
                 )}
-                
+
                 <div className="text-center mb-8">
                   <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
                   <div className="flex items-baseline justify-center">
@@ -518,7 +523,7 @@ const LandingPage = () => {
                   </div>
                   <p className="text-slate-400 mt-2">{plan.description}</p>
                 </div>
-                
+
                 <ul className="space-y-4 mb-8">
                   {plan.features.map((feature, featureIndex) => (
                     <li key={featureIndex} className="flex items-center text-slate-300">
@@ -527,9 +532,9 @@ const LandingPage = () => {
                     </li>
                   ))}
                 </ul>
-                
+
                 <button
-                  onClick={() => window.location.href = '/register'}
+                  onClick={() => (window.location.href = '/register')}
                   className={`w-full py-3 px-6 rounded-lg font-medium transition-colors ${
                     plan.popular
                       ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700'
@@ -559,7 +564,7 @@ const LandingPage = () => {
           <div className="grid md:grid-cols-2 gap-12 max-w-4xl mx-auto">
             <div>
               <h3 className="text-2xl font-bold text-white mb-6">Informações de Contato</h3>
-              
+
               <div className="space-y-6">
                 <div className="flex items-center space-x-4">
                   <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
@@ -570,7 +575,7 @@ const LandingPage = () => {
                     <p className="text-slate-400">contato@truecheckia.com</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center space-x-4">
                   <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
                     <Phone size={24} className="text-white" />
@@ -580,7 +585,7 @@ const LandingPage = () => {
                     <p className="text-slate-400">+55 (11) 99999-9999</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center space-x-4">
                   <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center">
                     <MapPin size={24} className="text-white" />
@@ -595,24 +600,16 @@ const LandingPage = () => {
 
             <div>
               <h3 className="text-2xl font-bold text-white mb-6">Envie uma Mensagem</h3>
-              
+
               <form className="space-y-4">
                 <div>
-                  <input
-                    type="text"
-                    placeholder="Seu nome"
-                    className="input w-full"
-                  />
+                  <input type="text" placeholder="Seu nome" className="input w-full" />
                 </div>
-                
+
                 <div>
-                  <input
-                    type="email"
-                    placeholder="Seu email"
-                    className="input w-full"
-                  />
+                  <input type="email" placeholder="Seu email" className="input w-full" />
                 </div>
-                
+
                 <div>
                   <textarea
                     placeholder="Sua mensagem"
@@ -620,11 +617,8 @@ const LandingPage = () => {
                     className="input w-full resize-none"
                   ></textarea>
                 </div>
-                
-                <button
-                  type="submit"
-                  className="btn-primary w-full"
-                >
+
+                <button type="submit" className="btn-primary w-full">
                   Enviar Mensagem
                 </button>
               </form>
@@ -650,42 +644,88 @@ const LandingPage = () => {
                 </a>
               </div>
             </div>
-            
+
             <div>
               <h4 className="text-white font-semibold mb-4">Produto</h4>
               <ul className="space-y-2">
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Recursos</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Preços</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors">API</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Documentação</a></li>
+                <li>
+                  <a href="#" className="text-slate-400 hover:text-white transition-colors">
+                    Recursos
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-slate-400 hover:text-white transition-colors">
+                    Preços
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-slate-400 hover:text-white transition-colors">
+                    API
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-slate-400 hover:text-white transition-colors">
+                    Documentação
+                  </a>
+                </li>
               </ul>
             </div>
-            
+
             <div>
               <h4 className="text-white font-semibold mb-4">Empresa</h4>
               <ul className="space-y-2">
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Sobre</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Blog</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Carreiras</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Imprensa</a></li>
+                <li>
+                  <a href="#" className="text-slate-400 hover:text-white transition-colors">
+                    Sobre
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-slate-400 hover:text-white transition-colors">
+                    Blog
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-slate-400 hover:text-white transition-colors">
+                    Carreiras
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-slate-400 hover:text-white transition-colors">
+                    Imprensa
+                  </a>
+                </li>
               </ul>
             </div>
-            
+
             <div>
               <h4 className="text-white font-semibold mb-4">Suporte</h4>
               <ul className="space-y-2">
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Central de Ajuda</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Contato</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Status</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Comunidade</a></li>
+                <li>
+                  <a href="#" className="text-slate-400 hover:text-white transition-colors">
+                    Central de Ajuda
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-slate-400 hover:text-white transition-colors">
+                    Contato
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-slate-400 hover:text-white transition-colors">
+                    Status
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-slate-400 hover:text-white transition-colors">
+                    Comunidade
+                  </a>
+                </li>
               </ul>
             </div>
           </div>
-          
+
           <div className="border-t border-slate-800 mt-8 pt-8 text-center">
-            <p className="text-slate-400">
-              © 2024 TrueCheckIA. Todos os direitos reservados.
-            </p>
+            <p className="text-slate-400">© 2024 TrueCheckIA. Todos os direitos reservados.</p>
           </div>
         </div>
       </footer>
@@ -696,4 +736,4 @@ const LandingPage = () => {
   );
 };
 
-export default LandingPage; 
+export default LandingPage;

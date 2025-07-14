@@ -1,116 +1,118 @@
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  X, 
-  ChevronRight, 
-  ChevronLeft, 
-  FileText, 
-  Upload, 
-  BarChart3, 
-  Settings,
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  X,
+  ChevronRight,
+  ChevronLeft,
+  FileText,
+  Upload,
+  BarChart3,
   Crown,
   Sparkles,
-  CheckCircle
-} from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
+  CheckCircle,
+} from 'lucide-react';
 
 interface OnboardingStep {
-  id: string
-  title: string
-  description: string
-  icon: React.ComponentType<any>
-  color: string
-  bgColor: string
+  id: string;
+  title: string;
+  description: string;
+  icon: React.ComponentType<any>;
+  color: string;
+  bgColor: string;
   action?: {
-    label: string
-    onClick: () => void
-  }
+    label: string;
+    onClick: () => void;
+  };
 }
 
 const onboardingSteps: OnboardingStep[] = [
   {
     id: 'welcome',
     title: 'Bem-vindo ao TrueCheckIA!',
-    description: 'Você está pronto para detectar conteúdo gerado por IA com nossa tecnologia avançada. Vamos conhecer os recursos principais!',
+    description:
+      'Você está pronto para detectar conteúdo gerado por IA com nossa tecnologia avançada. Vamos conhecer os recursos principais!',
     icon: Sparkles,
     color: 'text-yellow-400',
-    bgColor: 'bg-yellow-900/20'
+    bgColor: 'bg-yellow-900/20',
   },
   {
     id: 'text-analysis',
     title: 'Análise de Texto',
-    description: 'Cole qualquer texto e nossa IA irá detectar se foi gerado artificialmente. Perfeito para artigos, ensaios e conteúdo web.',
+    description:
+      'Cole qualquer texto e nossa IA irá detectar se foi gerado artificialmente. Perfeito para artigos, ensaios e conteúdo web.',
     icon: FileText,
     color: 'text-blue-400',
-    bgColor: 'bg-blue-900/20'
+    bgColor: 'bg-blue-900/20',
   },
   {
     id: 'file-upload',
     title: 'Upload de Arquivos',
-    description: 'Em breve você poderá analisar imagens, vídeos e documentos diretamente. Mantenha-se atento às atualizações!',
+    description:
+      'Em breve você poderá analisar imagens, vídeos e documentos diretamente. Mantenha-se atento às atualizações!',
     icon: Upload,
     color: 'text-purple-400',
-    bgColor: 'bg-purple-900/20'
+    bgColor: 'bg-purple-900/20',
   },
   {
     id: 'reports',
     title: 'Relatórios e Histórico',
-    description: 'Acompanhe todas as suas análises, veja estatísticas detalhadas e exporte relatórios profissionais.',
+    description:
+      'Acompanhe todas as suas análises, veja estatísticas detalhadas e exporte relatórios profissionais.',
     icon: BarChart3,
     color: 'text-green-400',
-    bgColor: 'bg-green-900/20'
+    bgColor: 'bg-green-900/20',
   },
   {
     id: 'plans',
     title: 'Planos e Upgrade',
-    description: 'Desbloqueie recursos avançados com nossos planos pagos. Comece com 7 dias grátis, sem necessidade de cartão!',
+    description:
+      'Desbloqueie recursos avançados com nossos planos pagos. Comece com 7 dias grátis, sem necessidade de cartão!',
     icon: Crown,
     color: 'text-orange-400',
     bgColor: 'bg-orange-900/20',
     action: {
       label: 'Ver Planos',
-      onClick: () => window.location.href = '/select-plan'
-    }
-  }
-]
+      onClick: () => (window.location.href = '/select-plan'),
+    },
+  },
+];
 
 interface OnboardingModalProps {
-  isOpen: boolean
-  onClose: () => void
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export const OnboardingModal = ({ isOpen, onClose }: OnboardingModalProps) => {
-  const [currentStep, setCurrentStep] = useState(0)
-  const { user } = useAuth()
-  
+  const [currentStep, setCurrentStep] = useState(0);
+
   const nextStep = () => {
     if (currentStep < onboardingSteps.length - 1) {
-      setCurrentStep(currentStep + 1)
+      setCurrentStep(currentStep + 1);
     } else {
-      handleComplete()
+      handleComplete();
     }
-  }
-  
+  };
+
   const prevStep = () => {
     if (currentStep > 0) {
-      setCurrentStep(currentStep - 1)
+      setCurrentStep(currentStep - 1);
     }
-  }
-  
+  };
+
   const handleComplete = () => {
     // Marcar onboarding como completo no localStorage
-    localStorage.setItem('onboarding_completed', 'true')
-    onClose()
-  }
-  
+    localStorage.setItem('onboarding_completed', 'true');
+    onClose();
+  };
+
   const handleSkip = () => {
-    localStorage.setItem('onboarding_completed', 'true')
-    onClose()
-  }
-  
-  const step = onboardingSteps[currentStep]
-  const Icon = step.icon
-  
+    localStorage.setItem('onboarding_completed', 'true');
+    onClose();
+  };
+
+  const step = onboardingSteps[currentStep];
+  const Icon = step.icon;
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -123,7 +125,7 @@ export const OnboardingModal = ({ isOpen, onClose }: OnboardingModalProps) => {
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={onClose}
           />
-          
+
           {/* Modal */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -143,7 +145,7 @@ export const OnboardingModal = ({ isOpen, onClose }: OnboardingModalProps) => {
                 <X size={20} />
               </button>
             </div>
-            
+
             {/* Progress bar */}
             <div className="h-1 bg-slate-800">
               <motion.div
@@ -153,7 +155,7 @@ export const OnboardingModal = ({ isOpen, onClose }: OnboardingModalProps) => {
                 transition={{ duration: 0.3 }}
               />
             </div>
-            
+
             {/* Content */}
             <div className="p-6">
               <motion.div
@@ -164,18 +166,16 @@ export const OnboardingModal = ({ isOpen, onClose }: OnboardingModalProps) => {
                 transition={{ duration: 0.3 }}
                 className="text-center"
               >
-                <div className={`w-16 h-16 mx-auto mb-4 rounded-2xl ${step.bgColor} flex items-center justify-center`}>
+                <div
+                  className={`w-16 h-16 mx-auto mb-4 rounded-2xl ${step.bgColor} flex items-center justify-center`}
+                >
                   <Icon size={32} className={step.color} />
                 </div>
-                
-                <h3 className="text-xl font-bold text-white mb-3">
-                  {step.title}
-                </h3>
-                
-                <p className="text-gray-300 text-sm leading-relaxed mb-6">
-                  {step.description}
-                </p>
-                
+
+                <h3 className="text-xl font-bold text-white mb-3">{step.title}</h3>
+
+                <p className="text-gray-300 text-sm leading-relaxed mb-6">{step.description}</p>
+
                 {step.action && (
                   <button
                     onClick={step.action.onClick}
@@ -186,7 +186,7 @@ export const OnboardingModal = ({ isOpen, onClose }: OnboardingModalProps) => {
                 )}
               </motion.div>
             </div>
-            
+
             {/* Footer */}
             <div className="flex items-center justify-between p-6 bg-slate-800/50">
               <button
@@ -195,7 +195,7 @@ export const OnboardingModal = ({ isOpen, onClose }: OnboardingModalProps) => {
               >
                 Pular Tutorial
               </button>
-              
+
               <div className="flex items-center space-x-3">
                 <button
                   onClick={prevStep}
@@ -204,7 +204,7 @@ export const OnboardingModal = ({ isOpen, onClose }: OnboardingModalProps) => {
                 >
                   <ChevronLeft size={20} />
                 </button>
-                
+
                 <button
                   onClick={nextStep}
                   className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium"
@@ -227,5 +227,5 @@ export const OnboardingModal = ({ isOpen, onClose }: OnboardingModalProps) => {
         </div>
       )}
     </AnimatePresence>
-  )
-}
+  );
+};

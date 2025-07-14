@@ -1,11 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
-import { 
-  Crown, CreditCard, Calendar, BarChart3, FileText, 
-  AlertCircle, Check, X, Loader2, ArrowUpRight, 
-  Clock, Gift, Rocket, Briefcase 
+import {
+  Crown,
+  Calendar,
+  BarChart3,
+  FileText,
+  AlertCircle,
+  Check,
+  Loader2,
+  ArrowUpRight,
+  Clock,
+  Gift,
+  Rocket,
+  Briefcase,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import PlanUsage from '../components/dashboard/PlanUsage';
@@ -70,7 +79,7 @@ const Subscription: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [changingPlan, setChangingPlan] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { user, updateUser } = useAuth();
+  const { updateUser } = useAuth();
 
   useEffect(() => {
     fetchData();
@@ -80,7 +89,7 @@ const Subscription: React.FC = () => {
     try {
       const [currentResponse, plansResponse] = await Promise.all([
         api.get('/api/plans/current'),
-        api.get('/api/plans/available')
+        api.get('/api/plans/available'),
       ]);
 
       setCurrentPlan(currentResponse.data.data);
@@ -95,16 +104,16 @@ const Subscription: React.FC = () => {
 
   const handleChangePlan = async (newPlanId: string) => {
     if (changingPlan) return;
-    
+
     setChangingPlan(newPlanId);
     try {
       const response = await api.post('/api/plans/select', { planId: newPlanId });
       toast.success(response.data.data.message);
-      
+
       // Atualiza dados do usuário
       const userResponse = await api.get('/api/auth/me');
       updateUser(userResponse.data.user);
-      
+
       // Recarrega dados
       await fetchData();
     } catch (error: any) {
@@ -183,12 +192,17 @@ const Subscription: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
           <div className="flex items-start justify-between">
             <div className="flex items-start">
-              <div className={`p-3 rounded-lg mr-4 ${
-                currentPlan.plan.name === 'FREE' ? 'bg-gray-100' :
-                currentPlan.plan.name === 'STARTER' ? 'bg-blue-100' :
-                currentPlan.plan.name === 'PRO' ? 'bg-purple-100' :
-                'bg-yellow-100'
-              }`}>
+              <div
+                className={`p-3 rounded-lg mr-4 ${
+                  currentPlan.plan.name === 'FREE'
+                    ? 'bg-gray-100'
+                    : currentPlan.plan.name === 'STARTER'
+                      ? 'bg-blue-100'
+                      : currentPlan.plan.name === 'PRO'
+                        ? 'bg-purple-100'
+                        : 'bg-yellow-100'
+                }`}
+              >
                 {getPlanIcon(currentPlan.plan.name)}
               </div>
               <div>
@@ -196,7 +210,7 @@ const Subscription: React.FC = () => {
                   {currentPlan.plan.displayName}
                 </h2>
                 <p className="text-gray-600 mt-1">{currentPlan.plan.description}</p>
-                
+
                 {/* Status do Plano */}
                 <div className="mt-4 flex flex-wrap gap-3">
                   {currentPlan.status === 'TRIAL' && currentPlan.trialEndsAt && (
@@ -205,7 +219,7 @@ const Subscription: React.FC = () => {
                       Trial expira em {getDaysRemaining(currentPlan.trialEndsAt)} dias
                     </div>
                   )}
-                  
+
                   {currentPlan.status === 'ACTIVE' && (
                     <div className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
                       <Check className="w-4 h-4 mr-1" />
@@ -244,9 +258,9 @@ const Subscription: React.FC = () => {
           <h3 className="text-xl font-semibold text-gray-900 mb-6">
             {canDowngrade ? 'Alterar Plano' : 'Fazer Upgrade'}
           </h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {availablePlans.map((plan) => {
+            {availablePlans.map(plan => {
               const isCurrent = isCurrentPlan(plan.id);
               const isDowngrade = plan.price < currentPlan.plan.price;
               const isUpgrade = plan.price > currentPlan.plan.price;
@@ -267,9 +281,7 @@ const Subscription: React.FC = () => {
                   )}
 
                   <div className="text-center mb-4">
-                    <h4 className="text-lg font-semibold text-gray-900">
-                      {plan.displayName}
-                    </h4>
+                    <h4 className="text-lg font-semibold text-gray-900">{plan.displayName}</h4>
                     <div className="mt-2">
                       <span className="text-2xl font-bold">
                         {formatCurrency(plan.price, plan.currency)}
@@ -281,11 +293,19 @@ const Subscription: React.FC = () => {
                   <ul className="space-y-2 mb-6 text-sm">
                     <li className="flex items-center">
                       <BarChart3 className="w-4 h-4 text-gray-400 mr-2" />
-                      <span>{plan.maxAnalyses === 99999 ? 'Análises ilimitadas' : `${plan.maxAnalyses} análises/mês`}</span>
+                      <span>
+                        {plan.maxAnalyses === 99999
+                          ? 'Análises ilimitadas'
+                          : `${plan.maxAnalyses} análises/mês`}
+                      </span>
                     </li>
                     <li className="flex items-center">
                       <FileText className="w-4 h-4 text-gray-400 mr-2" />
-                      <span>{plan.maxReports === 99999 ? 'Relatórios ilimitados' : `${plan.maxReports} relatórios/mês`}</span>
+                      <span>
+                        {plan.maxReports === 99999
+                          ? 'Relatórios ilimitados'
+                          : `${plan.maxReports} relatórios/mês`}
+                      </span>
                     </li>
                   </ul>
 
@@ -297,8 +317,8 @@ const Subscription: React.FC = () => {
                         changingPlan === plan.id
                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           : isDowngrade
-                          ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                          : 'bg-blue-500 text-white hover:bg-blue-600'
+                            ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            : 'bg-blue-500 text-white hover:bg-blue-600'
                       }`}
                     >
                       {changingPlan === plan.id ? (
@@ -326,12 +346,10 @@ const Subscription: React.FC = () => {
             <div className="flex items-start">
               <AlertCircle className="w-6 h-6 text-yellow-600 mr-3 mt-0.5" />
               <div>
-                <h4 className="text-lg font-semibold text-yellow-900">
-                  Período de Trial Ativo
-                </h4>
+                <h4 className="text-lg font-semibold text-yellow-900">Período de Trial Ativo</h4>
                 <p className="mt-1 text-yellow-800">
-                  Você está no período de trial gratuito de 7 dias. Aproveite para testar todos os recursos!
-                  Após o término, você precisará escolher um plano pago para continuar.
+                  Você está no período de trial gratuito de 7 dias. Aproveite para testar todos os
+                  recursos! Após o término, você precisará escolher um plano pago para continuar.
                 </p>
                 {currentPlan.trialEndsAt && (
                   <p className="mt-2 text-sm text-yellow-700">
