@@ -19,7 +19,7 @@ router.get('/dashboard', async (_req: Request, res: Response, next: NextFunction
       totalReports,
       activeUsers,
       completedAnalyses,
-      failedAnalyses
+      failedAnalyses,
     ] = await Promise.all([
       prisma.user.count(),
       prisma.analysis.count(),
@@ -27,40 +27,40 @@ router.get('/dashboard', async (_req: Request, res: Response, next: NextFunction
       prisma.user.count({
         where: {
           updatedAt: {
-            gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Últimos 30 dias
-          }
-        }
+            gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Últimos 30 dias
+          },
+        },
       }),
       prisma.analysis.count({
-        where: { status: 'COMPLETED' }
+        where: { status: 'COMPLETED' },
       }),
       prisma.analysis.count({
-        where: { status: 'FAILED' }
-      })
+        where: { status: 'FAILED' },
+      }),
     ]);
 
     // Análises por tipo de conteúdo
     const contentTypeStats = await prisma.analysis.groupBy({
       by: ['contentType'],
       _count: {
-        contentType: true
-      }
+        contentType: true,
+      },
     });
 
     // Análises por status
     const statusStats = await prisma.analysis.groupBy({
       by: ['status'],
       _count: {
-        status: true
-      }
+        status: true,
+      },
     });
 
     // Usuários por plano (usando UserPlan)
     const planStatsRaw = await prisma.userPlan.groupBy({
       by: ['planType'],
       _count: {
-        planType: true
-      }
+        planType: true,
+      },
     });
     const planStats = planStatsRaw.reduce((acc, stat) => {
       acc[stat.planType] = stat._count.planType;
@@ -75,12 +75,12 @@ router.get('/dashboard', async (_req: Request, res: Response, next: NextFunction
       by: ['createdAt'],
       where: {
         createdAt: {
-          gte: sevenDaysAgo
-        }
+          gte: sevenDaysAgo,
+        },
       },
       _count: {
-        createdAt: true
-      }
+        createdAt: true,
+      },
     });
 
     res.json({
@@ -91,7 +91,7 @@ router.get('/dashboard', async (_req: Request, res: Response, next: NextFunction
         activeUsers,
         completedAnalyses,
         failedAnalyses,
-        successRate: totalAnalyses > 0 ? (completedAnalyses / totalAnalyses) * 100 : 0
+        successRate: totalAnalyses > 0 ? (completedAnalyses / totalAnalyses) * 100 : 0,
       },
       contentTypeStats: contentTypeStats.reduce((acc, stat) => {
         acc[stat.contentType] = stat._count.contentType;
@@ -102,7 +102,7 @@ router.get('/dashboard', async (_req: Request, res: Response, next: NextFunction
         return acc;
       }, {} as any),
       planStats,
-      recentAnalyses
+      recentAnalyses,
     });
   } catch (error) {
     return next(error);
@@ -119,17 +119,17 @@ router.get('/users', async (req: Request, res: Response, next: NextFunction) => 
     if (search) {
       where.OR = [
         { email: { contains: search as string, mode: 'insensitive' } },
-        { name: { contains: search as string, mode: 'insensitive' } }
+        { name: { contains: search as string, mode: 'insensitive' } },
       ];
     }
     if (plan) where.planId = plan;
     if (status === 'active') {
       where.lastLoginAt = {
-        gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+        gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
       };
     } else if (status === 'inactive') {
       where.lastLoginAt = {
-        lt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+        lt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
       };
     }
 
@@ -141,15 +141,15 @@ router.get('/users', async (req: Request, res: Response, next: NextFunction) => 
           _count: {
             select: {
               analyses: true,
-              reports: true
-            }
-          }
+              reports: true,
+            },
+          },
         },
         orderBy: { createdAt: 'desc' },
         skip,
-        take: Number(limit)
+        take: Number(limit),
       }),
-      prisma.user.count({ where })
+      prisma.user.count({ where }),
     ]);
 
     res.json({
@@ -158,8 +158,8 @@ router.get('/users', async (req: Request, res: Response, next: NextFunction) => 
         page: Number(page),
         limit: Number(limit),
         total,
-        pages: Math.ceil(total / Number(limit))
-      }
+        pages: Math.ceil(total / Number(limit)),
+      },
     });
   } catch (error) {
     return next(error);
@@ -177,19 +177,19 @@ router.get('/users/:id', async (req: Request, res: Response, next: NextFunction)
         userPlan: true,
         analyses: {
           orderBy: { createdAt: 'desc' },
-          take: 10
+          take: 10,
         },
         reports: {
           orderBy: { createdAt: 'desc' },
-          take: 10
+          take: 10,
         },
         _count: {
           select: {
             analyses: true,
-            reports: true
-          }
-        }
-      }
+            reports: true,
+          },
+        },
+      },
     });
 
     if (!user) {
@@ -203,50 +203,54 @@ router.get('/users/:id', async (req: Request, res: Response, next: NextFunction)
 });
 
 // Atualizar usuário
-router.put('/users/:id', [
-  body('name').optional().trim().isLength({ min: 2, max: 100 }),
-  body('email').optional().isEmail().normalizeEmail(),
-  body('role').optional().isIn(['USER', 'ADMIN']),
-  body('isActive').optional().isBoolean()
-], async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const userId = req.params['id'] as string;
-    const { name, email, role, isActive } = req.body;
-
-    const user = await prisma.user.findUnique({
-      where: { id: userId }
-    });
-
-    if (!user) {
-      return res.status(404).json({ error: 'Usuário não encontrado' });
-    }
-
-    const updateData: any = {};
-    if (name) updateData.name = name;
-    if (email) updateData.email = email;
-    if (role) updateData.role = role;
-    if (typeof isActive === 'boolean') updateData.isActive = isActive;
-
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: updateData,
-      include: {
-        userPlan: true
+router.put(
+  '/users/:id',
+  [
+    body('name').optional().trim().isLength({ min: 2, max: 100 }),
+    body('email').optional().isEmail().normalizeEmail(),
+    body('role').optional().isIn(['USER', 'ADMIN']),
+    body('isActive').optional().isBoolean(),
+  ],
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
       }
-    });
 
-    logger.info(`Usuário atualizado por admin: ${updatedUser.email}`);
+      const userId = req.params['id'] as string;
+      const { name, email, role, isActive } = req.body;
 
-    res.json({ user: updatedUser });
-  } catch (error) {
-    return next(error);
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        return res.status(404).json({ error: 'Usuário não encontrado' });
+      }
+
+      const updateData: any = {};
+      if (name) updateData.name = name;
+      if (email) updateData.email = email;
+      if (role) updateData.role = role;
+      if (typeof isActive === 'boolean') updateData.isActive = isActive;
+
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: updateData,
+        include: {
+          userPlan: true,
+        },
+      });
+
+      logger.info(`Usuário atualizado por admin: ${updatedUser.email}`);
+
+      res.json({ user: updatedUser });
+    } catch (error) {
+      return next(error);
+    }
   }
-});
+);
 
 // Listar análises
 router.get('/analyses', async (req: Request, res: Response, next: NextFunction) => {
@@ -267,16 +271,16 @@ router.get('/analyses', async (req: Request, res: Response, next: NextFunction) 
             select: {
               id: true,
               email: true,
-              name: true
-            }
+              name: true,
+            },
           },
-          results: true
+          results: true,
         },
         orderBy: { createdAt: 'desc' },
         skip,
-        take: Number(limit)
+        take: Number(limit),
       }),
-      prisma.analysis.count({ where })
+      prisma.analysis.count({ where }),
     ]);
 
     res.json({
@@ -285,8 +289,8 @@ router.get('/analyses', async (req: Request, res: Response, next: NextFunction) 
         page: Number(page),
         limit: Number(limit),
         total,
-        pages: Math.ceil(total / Number(limit))
-      }
+        pages: Math.ceil(total / Number(limit)),
+      },
     });
   } catch (error) {
     return next(error);
@@ -305,12 +309,12 @@ router.get('/analyses/:id', async (req: Request, res: Response, next: NextFuncti
           select: {
             id: true,
             email: true,
-            name: true
-          }
+            name: true,
+          },
         },
         results: true,
-        reports: true
-      }
+        reports: true,
+      },
     });
 
     if (!analysis) {
@@ -341,22 +345,22 @@ router.get('/reports', async (req: Request, res: Response, next: NextFunction) =
             select: {
               id: true,
               email: true,
-              name: true
-            }
+              name: true,
+            },
           },
           analysis: {
             select: {
               id: true,
               title: true,
-              contentType: true
-            }
-          }
+              contentType: true,
+            },
+          },
         },
         orderBy: { createdAt: 'desc' },
         skip,
-        take: Number(limit)
+        take: Number(limit),
       }),
-      prisma.report.count({ where })
+      prisma.report.count({ where }),
     ]);
 
     res.json({
@@ -365,8 +369,8 @@ router.get('/reports', async (req: Request, res: Response, next: NextFunction) =
         page: Number(page),
         limit: Number(limit),
         total,
-        pages: Math.ceil(total / Number(limit))
-      }
+        pages: Math.ceil(total / Number(limit)),
+      },
     });
   } catch (error) {
     return next(error);
@@ -380,7 +384,7 @@ router.get('/system-stats', async (_req: Request, res: Response, next: NextFunct
     const storageStats = {
       total: 1024, // GB
       used: Math.random() * 500 + 200, // GB
-      available: 1024 - (Math.random() * 500 + 200) // GB
+      available: 1024 - (Math.random() * 500 + 200), // GB
     };
 
     // Performance do sistema
@@ -388,7 +392,7 @@ router.get('/system-stats', async (_req: Request, res: Response, next: NextFunct
       averageResponseTime: Math.random() * 100 + 50, // ms
       requestsPerMinute: Math.random() * 1000 + 500,
       errorRate: Math.random() * 5, // %
-      uptime: 99.9 // %
+      uptime: 99.9, // %
     };
 
     // Análises por hora (últimas 24 horas)
@@ -402,25 +406,25 @@ router.get('/system-stats', async (_req: Request, res: Response, next: NextFunct
         where: {
           createdAt: {
             gte: hour,
-            lt: new Date(hour.getTime() + 60 * 60 * 1000)
-          }
-        }
+            lt: new Date(hour.getTime() + 60 * 60 * 1000),
+          },
+        },
       });
 
       hourlyStats.push({
         hour: hour.toISOString(),
-        count
+        count,
       });
     }
 
     res.json({
       storage: storageStats,
       performance: performanceStats,
-      hourlyAnalyses: hourlyStats
+      hourlyAnalyses: hourlyStats,
     });
   } catch (error) {
     return next(error);
   }
 });
 
-export { router as adminRoutes }; 
+export { router as adminRoutes };

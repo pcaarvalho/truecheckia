@@ -1,5 +1,8 @@
 import { redis } from '../config/redis';
 import { logger } from '../utils/logger';
+import { prisma } from '../config/database';
+import { anthropicService } from './anthropicService';
+import { imageAnalysisService } from './imageAnalysisService';
 
 interface QueueJob {
   id?: string;
@@ -22,7 +25,7 @@ export async function addToQueue(type: string, data: any): Promise<void> {
   const job: QueueJob = {
     id: `${type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     type,
-    data
+    data,
   };
 
   try {
@@ -34,7 +37,7 @@ export async function addToQueue(type: string, data: any): Promise<void> {
       // Fallback para fila em memória
       memoryQueue.push(job);
       logger.info(`Job ${job.id} adicionado à fila em memória`);
-      
+
       // Processa a fila se não estiver sendo processada
       if (!queueProcessing) {
         processMemoryQueue();
@@ -52,7 +55,7 @@ export async function addToQueue(type: string, data: any): Promise<void> {
 
 async function processMemoryQueue(): Promise<void> {
   if (queueProcessing) return;
-  
+
   queueProcessing = true;
   logger.info('Iniciando processamento da fila em memória');
 
@@ -89,26 +92,25 @@ async function processJob(job: QueueJob): Promise<void> {
 
 async function processAnalysisJob(data: any): Promise<void> {
   logger.info(`Processando análise: ${data.analysisId} - Tipo: ${data.contentType}`);
-  
+
   try {
-    const { prisma } = require('../config/database');
-    const { anthropicService } = require('./anthropicService');
-    const { imageAnalysisService } = require('./imageAnalysisService');
-    
     // Atualiza status para PROCESSING
     await prisma.analysis.update({
       where: { id: data.analysisId },
-      data: { status: 'PROCESSING' }
+      data: { status: 'PROCESSING' },
     });
-    
+
     let result: AnalysisResult;
-    
+
     if (data.textContent) {
       // Analisa texto
       result = await anthropicService.analyzeText(data.textContent);
     } else if (data.contentType === 'IMAGE' && data.fileUrl) {
       // Analisa imagem
-      result = await imageAnalysisService.analyzeImage(data.fileUrl, data.fileName || 'unknown.jpg');
+      result = await imageAnalysisService.analyzeImage(
+        data.fileUrl,
+        data.fileName || 'unknown.jpg'
+      );
     } else if (data.contentType === 'VIDEO' && data.fileUrl) {
       // Para vídeo, usa análise simulada por enquanto
       result = {
@@ -118,8 +120,8 @@ async function processAnalysisJob(data: any): Promise<void> {
         details: {
           message: 'Análise de vídeo em desenvolvimento - resultado simulado',
           processingTime: 2000 + Math.random() * 1000,
-          fileName: data.fileName
-        }
+          fileName: data.fileName,
+        },
       };
     } else {
       // Para outros tipos de conteúdo, usa análise genérica
@@ -130,8 +132,8 @@ async function processAnalysisJob(data: any): Promise<void> {
         details: {
           message: 'Análise genérica aplicada - tipo de arquivo não específico',
           processingTime: 500,
-          contentType: data.contentType
-        }
+          contentType: data.contentType,
+        },
       };
     }
 
@@ -142,8 +144,8 @@ async function processAnalysisJob(data: any): Promise<void> {
         status: 'COMPLETED',
         confidence: result.confidence,
         isAIGenerated: result.isAIGenerated,
-        metadata: JSON.stringify(result.details || {})
-      }
+        metadata: JSON.stringify(result.details || {}),
+      },
     });
 
     // Salva resultado detalhado
@@ -156,27 +158,25 @@ async function processAnalysisJob(data: any): Promise<void> {
         details: JSON.stringify({
           message: result.details?.message || 'Análise concluída',
           response: result.details?.response || 'Sem resposta específica',
-          ...(result.details || {})
+          ...(result.details || {}),
         }),
-        processingTime: result.details?.processingTime || 0
-      }
+        processingTime: result.details?.processingTime || 0,
+      },
     });
 
     logger.info(`Análise ${data.analysisId} concluída com sucesso`);
-    
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     logger.error(`Erro ao processar análise ${data.analysisId}:`, error);
-    
+
     // Atualiza status para FAILED
     try {
-      const { prisma } = require('../config/database');
-    await prisma.analysis.update({
+      await prisma.analysis.update({
         where: { id: data.analysisId },
-      data: { 
-        status: 'FAILED',
-          metadata: JSON.stringify({ error: errorMessage })
-        }
+        data: {
+          status: 'FAILED',
+          metadata: JSON.stringify({ error: errorMessage }),
+        },
       });
     } catch (updateError) {
       logger.error('Erro ao atualizar status de falha:', updateError);
@@ -187,4 +187,4 @@ async function processAnalysisJob(data: any): Promise<void> {
 async function processReportJob(data: any): Promise<void> {
   logger.info(`Processando relatório: ${data.reportId}`);
   // Implementar processamento de relatórios quando necessário
-} 
+}

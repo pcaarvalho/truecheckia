@@ -3,6 +3,28 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { authService } from '../services/api';
 
+interface Subscription {
+  id: string;
+  planId: string;
+  status: 'active' | 'inactive' | 'cancelled' | 'expired';
+  currentPeriodStart: Date;
+  currentPeriodEnd: Date;
+  isTrial?: boolean;
+  trialEndsAt?: Date;
+  canceled?: boolean;
+  plan: {
+    id: string;
+    name: string;
+    code: string;
+    displayName: string;
+    price: number;
+    analysesLimit: number;
+    reportsLimit: number;
+    maxVideoLength: number;
+    features: Record<string, boolean>;
+  };
+}
+
 interface User {
   id: string;
   email: string;
@@ -10,6 +32,8 @@ interface User {
   role: string;
   plan?: any;
   requiresPlanSelection?: boolean;
+  subscription?: Subscription;
+  createdAt: Date;
 }
 
 interface AuthContextType {
@@ -44,12 +68,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const restoreUser = async () => {
       const accessToken = localStorage.getItem('accessToken');
-      
+
       if (!accessToken) {
         setLoading(false);
         return;
       }
-      
+
       try {
         console.log('🔄 Restaurando usuário...');
         const response = await authService.me();
@@ -64,7 +88,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setLoading(false);
       }
     };
-    
+
     restoreUser();
   }, []);
 
@@ -80,7 +104,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       console.log('🔄 Tentando fazer login...', { email });
-      
+
       const response = await authService.login(email, password);
       console.log('✅ Resposta do login:', response.data);
 
@@ -95,7 +119,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(user);
 
       toast.success('Login realizado com sucesso!');
-      
+
       // Verifica se o usuário precisa selecionar um plano
       if (user.requiresPlanSelection) {
         navigate('/select-plan');
@@ -104,13 +128,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (error: any) {
       console.error('❌ Erro no login:', error);
-      
+
       let message = 'Erro ao fazer login';
-      
+
       if (error.response) {
         const serverError = error.response.data;
         message = serverError.error || serverError.message || 'Credenciais inválidas';
-        
+
         if (error.response.status === 401) {
           message = 'Email ou senha incorretos';
         } else if (error.response.status === 400) {
@@ -123,7 +147,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         message = error.message || 'Erro desconhecido';
       }
-      
+
       toast.error(message);
       throw error;
     } finally {
@@ -134,7 +158,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = async (name: string, email: string, password: string) => {
     try {
       setLoading(true);
-      
+
       const response = await authService.register(name, email, password);
 
       const { accessToken, refreshToken, user } = response.data;
@@ -144,7 +168,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(user);
 
       toast.success(response.data.message || 'Conta criada com sucesso!');
-      
+
       // Redirecionar baseado em requiresPlanSelection
       if (user.requiresPlanSelection) {
         navigate('/select-plan');
@@ -153,13 +177,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (error: any) {
       console.error('❌ Erro no registro:', error);
-      
+
       let message = 'Erro ao criar conta';
-      
+
       if (error.response) {
         const serverError = error.response.data;
         message = serverError.error || serverError.message || 'Erro no registro';
-        
+
         if (error.response.status === 409) {
           message = 'Email já cadastrado';
         } else if (error.response.status === 400) {
@@ -170,7 +194,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         message = error.message || 'Erro desconhecido';
       }
-      
+
       toast.error(message);
       throw error;
     } finally {
@@ -179,7 +203,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const updateUser = (data: Partial<User>) => {
-    setUser(prev => prev ? { ...prev, ...data } : null);
+    setUser(prev => (prev ? { ...prev, ...data } : null));
   };
 
   const value = {
@@ -188,12 +212,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     register,
     logout,
-    updateUser
+    updateUser,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
-}; 
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};

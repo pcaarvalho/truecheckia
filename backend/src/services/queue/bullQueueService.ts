@@ -22,7 +22,7 @@ export interface QueueStats {
 export class BullQueueService {
   private static instance: BullQueueService;
   private queues: Map<string, Queue> = new Map();
-  private processors: Map<string, Function> = new Map();
+  private processors: Map<string, (job: Job<QueueJobData>) => Promise<any>> = new Map();
   private connected = false;
 
   private constructor() {}
@@ -50,7 +50,7 @@ export class BullQueueService {
           keyPrefix: process.env.REDIS_QUEUE_PREFIX || 'bull:',
           maxRetriesPerRequest: 3,
           retryDelayOnFailover: 1000,
-          lazyConnect: true
+          lazyConnect: true,
         },
         defaultJobOptions: {
           removeOnComplete: 50, // Mantém últimos 50 jobs completos
@@ -58,9 +58,9 @@ export class BullQueueService {
           attempts: 3,
           backoff: {
             type: 'exponential',
-            delay: 2000
-          }
-        } as JobOptions
+            delay: 2000,
+          },
+        } as JobOptions,
       };
 
       // Cria filas específicas
@@ -71,7 +71,6 @@ export class BullQueueService {
 
       this.connected = true;
       logger.info('Bull Queue Service initialized successfully');
-
     } catch (error) {
       logger.error('Failed to initialize Bull Queue Service:', error);
       throw error;
@@ -97,15 +96,15 @@ export class BullQueueService {
     queue.on('active', (job) => {
       logger.info(`Job ${job.id} started processing in queue ${name}`, {
         jobType: job.data.type,
-        userId: job.data.userId
+        userId: job.data.userId,
       });
     });
 
-    queue.on('completed', (job, result) => {
+    queue.on('completed', (job, _result) => {
       logger.info(`Job ${job.id} completed in queue ${name}`, {
         jobType: job.data.type,
         userId: job.data.userId,
-        processingTime: Date.now() - job.processedOn!
+        processingTime: Date.now() - job.processedOn!,
       });
     });
 
@@ -114,14 +113,14 @@ export class BullQueueService {
         jobType: job.data.type,
         userId: job.data.userId,
         attempts: job.attemptsMade,
-        maxAttempts: job.opts.attempts
+        maxAttempts: job.opts.attempts,
       });
     });
 
     queue.on('stalled', (job) => {
       logger.warn(`Job ${job.id} stalled in queue ${name}`, {
         jobType: job.data.type,
-        userId: job.data.userId
+        userId: job.data.userId,
       });
     });
 
@@ -134,7 +133,7 @@ export class BullQueueService {
     options: JobOptions = {}
   ): Promise<string> {
     const queue = this.queues.get(queueName);
-    
+
     if (!queue) {
       throw new Error(`Queue ${queueName} not found`);
     }
@@ -147,16 +146,16 @@ export class BullQueueService {
         backoff: options.backoff || { type: 'exponential', delay: 2000 },
         removeOnComplete: options.removeOnComplete || 50,
         removeOnFail: options.removeOnFail || 100,
-        ...options
+        ...options,
       });
 
       logger.info(`Job ${job.id} added to queue ${queueName}`, {
         jobType: jobData.type,
         userId: jobData.userId,
-        priority: jobData.priority
+        priority: jobData.priority,
       });
 
-      return job.id!.toString();
+      return job.id.toString();
     } catch (error) {
       logger.error(`Failed to add job to queue ${queueName}:`, error);
       throw error;
@@ -170,7 +169,7 @@ export class BullQueueService {
     concurrency: number = 1
   ): void {
     const queue = this.queues.get(queueName);
-    
+
     if (!queue) {
       throw new Error(`Queue ${queueName} not found`);
     }
@@ -180,21 +179,21 @@ export class BullQueueService {
 
     queue.process(jobType, concurrency, async (job: Job<QueueJobData>) => {
       const startTime = Date.now();
-      
+
       try {
         logger.info(`Processing job ${job.id} of type ${jobType}`, {
           userId: job.data.userId,
           queueName,
-          attempt: job.attemptsMade + 1
+          attempt: job.attemptsMade + 1,
         });
 
         const result = await processor(job);
-        
+
         const processingTime = Date.now() - startTime;
         logger.info(`Job ${job.id} processed successfully`, {
           jobType,
           userId: job.data.userId,
-          processingTime
+          processingTime,
         });
 
         return result;
@@ -205,9 +204,9 @@ export class BullQueueService {
           userId: job.data.userId,
           processingTime,
           attempt: job.attemptsMade + 1,
-          maxAttempts: job.opts.attempts
+          maxAttempts: job.opts.attempts,
         });
-        
+
         throw error;
       }
     });
@@ -217,7 +216,7 @@ export class BullQueueService {
 
   async getJob(queueName: string, jobId: string): Promise<Job | null> {
     const queue = this.queues.get(queueName);
-    
+
     if (!queue) {
       return null;
     }
@@ -232,7 +231,7 @@ export class BullQueueService {
 
   async getQueueStats(queueName: string): Promise<QueueStats | null> {
     const queue = this.queues.get(queueName);
-    
+
     if (!queue) {
       return null;
     }
@@ -244,7 +243,7 @@ export class BullQueueService {
         queue.getCompleted(),
         queue.getFailed(),
         queue.getDelayed(),
-        queue.getPaused()
+        queue.getPaused(),
       ]);
 
       return {
@@ -253,7 +252,7 @@ export class BullQueueService {
         completed: completed.length,
         failed: failed.length,
         delayed: delayed.length,
-        paused: paused.length
+        paused: paused.length,
       };
     } catch (error) {
       logger.error(`Failed to get stats for queue ${queueName}:`, error);
@@ -276,7 +275,7 @@ export class BullQueueService {
 
   async pauseQueue(queueName: string): Promise<boolean> {
     const queue = this.queues.get(queueName);
-    
+
     if (!queue) {
       return false;
     }
@@ -293,7 +292,7 @@ export class BullQueueService {
 
   async resumeQueue(queueName: string): Promise<boolean> {
     const queue = this.queues.get(queueName);
-    
+
     if (!queue) {
       return false;
     }
@@ -314,7 +313,7 @@ export class BullQueueService {
     status: 'completed' | 'failed' | 'active' | 'waiting' = 'completed'
   ): Promise<number> {
     const queue = this.queues.get(queueName);
-    
+
     if (!queue) {
       return 0;
     }
@@ -331,7 +330,7 @@ export class BullQueueService {
 
   async retryFailedJobs(queueName: string, limit: number = 100): Promise<number> {
     const queue = this.queues.get(queueName);
-    
+
     if (!queue) {
       return 0;
     }
@@ -359,20 +358,20 @@ export class BullQueueService {
 
   async removeJob(queueName: string, jobId: string): Promise<boolean> {
     const queue = this.queues.get(queueName);
-    
+
     if (!queue) {
       return false;
     }
 
     try {
       const job = await queue.getJob(jobId);
-      
+
       if (job) {
         await job.remove();
         logger.info(`Job ${jobId} removed from queue ${queueName}`);
         return true;
       }
-      
+
       return false;
     } catch (error) {
       logger.error(`Failed to remove job ${jobId} from queue ${queueName}:`, error);
@@ -404,7 +403,10 @@ export class BullQueueService {
     return Array.from(this.queues.keys());
   }
 
-  async healthCheck(): Promise<{ status: 'healthy' | 'unhealthy'; queues: Record<string, boolean> }> {
+  async healthCheck(): Promise<{
+    status: 'healthy' | 'unhealthy';
+    queues: Record<string, boolean>;
+  }> {
     const queueStatus: Record<string, boolean> = {};
     let allHealthy = true;
 
@@ -422,10 +424,10 @@ export class BullQueueService {
 
     return {
       status: allHealthy && this.connected ? 'healthy' : 'unhealthy',
-      queues: queueStatus
+      queues: queueStatus,
     };
   }
 }
 
 // Instância singleton
-export const bullQueueService = BullQueueService.getInstance(); 
+export const bullQueueService = BullQueueService.getInstance();

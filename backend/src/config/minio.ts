@@ -5,13 +5,17 @@ let minioClient: Client | null = null;
 const BUCKET_NAME = 'ai-detector-files';
 
 // Inicializa MinIO apenas se as configurações estiverem disponíveis
-if (process.env['MINIO_ENDPOINT'] && process.env['MINIO_ACCESS_KEY'] && process.env['MINIO_SECRET_KEY']) {
+if (
+  process.env['MINIO_ENDPOINT'] &&
+  process.env['MINIO_ACCESS_KEY'] &&
+  process.env['MINIO_SECRET_KEY']
+) {
   minioClient = new Client({
     endPoint: process.env['MINIO_ENDPOINT'],
     port: parseInt(process.env['MINIO_PORT'] || '9000'),
     useSSL: process.env['MINIO_USE_SSL'] === 'true',
     accessKey: process.env['MINIO_ACCESS_KEY'],
-    secretKey: process.env['MINIO_SECRET_KEY']
+    secretKey: process.env['MINIO_SECRET_KEY'],
   });
 }
 
@@ -34,4 +38,4 @@ export async function setupMinIO() {
   }
 }
 
-export { minioClient, BUCKET_NAME }; 
+export { minioClient, BUCKET_NAME };

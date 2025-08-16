@@ -1,32 +1,29 @@
-import { NavLink } from 'react-router-dom'
-import { useAuth } from '@/contexts/AuthContext'
-import { 
-  LayoutDashboard, 
-  Upload, 
-  FileText, 
-  User, 
-  Settings,
+import { NavLink } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  LayoutDashboard,
+  Upload,
+  FileText,
+  User,
   Shield,
   LogOut,
   Menu,
-  X
-} from 'lucide-react'
-import { useState } from 'react'
+  X,
+} from 'lucide-react';
+import { useState } from 'react';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Upload', href: '/upload', icon: Upload },
   { name: 'Relatórios', href: '/reports', icon: FileText },
   { name: 'Perfil', href: '/profile', icon: User },
-]
+];
 
-const adminNavigation = [
-  { name: 'Admin', href: '/admin', icon: Shield },
-]
+const adminNavigation = [{ name: 'Admin', href: '/admin', icon: Shield }];
 
 export const Sidebar = () => {
-  const { user, logout } = useAuth()
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { user, logout } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <>
@@ -41,10 +38,12 @@ export const Sidebar = () => {
       </div>
 
       {/* Sidebar */}
-      <div className={`
+      <div
+        className={`
         fixed inset-y-0 left-0 z-40 w-64 bg-dark-900 border-r border-dark-700 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0
         ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
+      `}
+      >
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center justify-center h-16 px-6 border-b border-dark-700">
@@ -58,17 +57,18 @@ export const Sidebar = () => {
 
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-2">
-            {navigation.map((item) => {
-              const Icon = item.icon
+            {navigation.map(item => {
+              const Icon = item.icon;
               return (
                 <NavLink
                   key={item.name}
                   to={item.href}
                   className={({ isActive }) => `
                     flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200
-                    ${isActive 
-                      ? 'bg-primary-500/10 text-primary-400 border border-primary-500/20' 
-                      : 'text-dark-300 hover:text-white hover:bg-dark-800'
+                    ${
+                      isActive
+                        ? 'bg-primary-500/10 text-primary-400 border border-primary-500/20'
+                        : 'text-dark-300 hover:text-white hover:bg-dark-800'
                     }
                   `}
                   onClick={() => setMobileMenuOpen(false)}
@@ -76,7 +76,7 @@ export const Sidebar = () => {
                   <Icon size={20} />
                   <span>{item.name}</span>
                 </NavLink>
-              )
+              );
             })}
 
             {/* Admin navigation */}
@@ -85,17 +85,18 @@ export const Sidebar = () => {
                 <p className="px-4 text-xs font-semibold text-dark-400 uppercase tracking-wider mb-2">
                   Administração
                 </p>
-                {adminNavigation.map((item) => {
-                  const Icon = item.icon
+                {adminNavigation.map(item => {
+                  const Icon = item.icon;
                   return (
                     <NavLink
                       key={item.name}
                       to={item.href}
                       className={({ isActive }) => `
                         flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200
-                        ${isActive 
-                          ? 'bg-secondary-500/10 text-secondary-400 border border-secondary-500/20' 
-                          : 'text-dark-300 hover:text-white hover:bg-dark-800'
+                        ${
+                          isActive
+                            ? 'bg-secondary-500/10 text-secondary-400 border border-secondary-500/20'
+                            : 'text-dark-300 hover:text-white hover:bg-dark-800'
                         }
                       `}
                       onClick={() => setMobileMenuOpen(false)}
@@ -103,7 +104,7 @@ export const Sidebar = () => {
                       <Icon size={20} />
                       <span>{item.name}</span>
                     </NavLink>
-                  )
+                  );
                 })}
               </div>
             )}
@@ -118,15 +119,11 @@ export const Sidebar = () => {
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">
-                  {user?.name}
-                </p>
-                <p className="text-xs text-dark-400 truncate">
-                  {user?.email}
-                </p>
+                <p className="text-sm font-medium text-white truncate">{user?.name}</p>
+                <p className="text-xs text-dark-400 truncate">{user?.email}</p>
               </div>
             </div>
-            
+
             <button
               onClick={logout}
               className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-dark-300 hover:text-white hover:bg-dark-800 transition-all duration-200"
@@ -140,11 +137,11 @@ export const Sidebar = () => {
 
       {/* Mobile overlay */}
       {mobileMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-30 lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
     </>
-  )
-} 
+  );
+};

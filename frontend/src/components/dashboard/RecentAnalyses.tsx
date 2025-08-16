@@ -1,63 +1,50 @@
-import { FileText, Video, Image, CheckCircle, XCircle, Clock, Activity } from 'lucide-react'
+import { FileText, Video, Image, CheckCircle, XCircle, Clock, Activity } from 'lucide-react';
 
 interface Analysis {
-  id: string
-  fileName: string
-  fileType: 'TEXT' | 'VIDEO' | 'IMAGE'
-  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED'
-  confidence: number
-  isAIGenerated: boolean
-  createdAt: string
+  id: string;
+  fileName: string;
+  fileType: 'TEXT' | 'VIDEO' | 'IMAGE';
+  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  confidence: number;
+  isAIGenerated: boolean;
+  createdAt: string;
 }
 
 interface RecentAnalysesProps {
-  analyses: Analysis[]
-  onViewAll?: () => void
+  analyses: Analysis[];
+  onViewAll?: () => void;
 }
 
 export const RecentAnalyses = ({ analyses, onViewAll }: RecentAnalysesProps) => {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'COMPLETED':
-        return <CheckCircle size={16} className="text-green-500" />
+        return <CheckCircle size={16} className="text-green-500" />;
       case 'FAILED':
-        return <XCircle size={16} className="text-red-500" />
+        return <XCircle size={16} className="text-red-500" />;
       case 'PROCESSING':
-        return <Activity size={16} className="text-blue-500 animate-pulse" />
+        return <Activity size={16} className="text-blue-500 animate-pulse" />;
       default:
-        return <Clock size={16} className="text-yellow-500" />
+        return <Clock size={16} className="text-yellow-500" />;
     }
-  }
+  };
 
   const getFileTypeIcon = (type: string) => {
     switch (type) {
       case 'TEXT':
-        return <FileText size={16} className="text-blue-400" />
+        return <FileText size={16} className="text-blue-400" />;
       case 'VIDEO':
-        return <Video size={16} className="text-purple-400" />
+        return <Video size={16} className="text-purple-400" />;
       case 'IMAGE':
-        return <Image size={16} className="text-green-400" />
+        return <Image size={16} className="text-green-400" />;
       default:
-        return <FileText size={16} className="text-gray-400" />
+        return <FileText size={16} className="text-gray-400" />;
     }
-  }
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'COMPLETED':
-        return 'Concluído'
-      case 'FAILED':
-        return 'Falhou'
-      case 'PROCESSING':
-        return 'Processando'
-      default:
-        return 'Pendente'
-    }
-  }
+  };
 
   return (
     <div className="space-y-4">
-      {analyses.map((analysis) => (
+      {analyses.map(analysis => (
         <div
           key={analysis.id}
           className="flex items-center justify-between p-4 bg-dark-800 rounded-lg border border-dark-700 hover:border-dark-600 transition-colors"
@@ -71,7 +58,7 @@ export const RecentAnalyses = ({ analyses, onViewAll }: RecentAnalysesProps) => 
               </p>
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-3">
             {analysis.status === 'COMPLETED' && (
               <div className="text-right">
@@ -87,10 +74,10 @@ export const RecentAnalyses = ({ analyses, onViewAll }: RecentAnalysesProps) => 
           </div>
         </div>
       ))}
-      
+
       {onViewAll && (
         <div className="pt-4 border-t border-dark-700">
-          <button 
+          <button
             onClick={onViewAll}
             className="text-primary-500 hover:text-primary-400 text-sm font-medium transition-colors"
           >
@@ -99,5 +86,5 @@ export const RecentAnalyses = ({ analyses, onViewAll }: RecentAnalysesProps) => 
         </div>
       )}
     </div>
-  )
-} 
+  );
+};

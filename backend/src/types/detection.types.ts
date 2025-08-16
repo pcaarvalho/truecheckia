@@ -8,12 +8,30 @@ export interface DetectionResult {
   requestId: string;
 }
 
+export interface AnalysisResponse {
+  summary?: string;
+  details?: string[];
+  confidence?: number;
+}
+
+export interface FaceAnalysis {
+  faces_detected: number;
+  manipulation_score: number;
+  inconsistencies: string[];
+}
+
+export interface MotionAnalysis {
+  smoothness: string;
+  consistency: string;
+  temporal_artifacts: number;
+}
+
 export interface DetectionDetails {
   message?: string;
-  response?: any;
+  response?: string | AnalysisResponse;
   model?: string;
   tokensUsed?: number;
-  analysis?: any;
+  analysis?: AnalysisResponse;
   wordCount?: number;
   textLength?: number;
   perplexity?: number;
@@ -30,19 +48,26 @@ export interface DetectionDetails {
   resolution?: string;
   duration?: string;
   artifacts_detected?: number;
-  face_analysis?: any;
-  motion_analysis?: any;
+  face_analysis?: FaceAnalysis;
+  motion_analysis?: MotionAnalysis;
   deepfake_confidence?: number;
   face_swap_detected?: boolean;
   lip_sync_score?: number;
   temporal_artifacts?: number;
 }
 
+export interface AnalysisMetadata {
+  source?: string;
+  tags?: string[];
+  language?: string;
+  [key: string]: unknown;
+}
+
 export interface TextAnalysisData {
   textContent: string;
   title?: string;
   description?: string;
-  metadata?: Record<string, any>;
+  metadata?: AnalysisMetadata;
   userId?: string;
   requestId?: string;
 }
@@ -51,7 +76,7 @@ export interface VideoAnalysisData {
   fileUrl: string;
   title?: string;
   description?: string;
-  metadata?: Record<string, any>;
+  metadata?: AnalysisMetadata;
   userId?: string;
   requestId?: string;
 }
@@ -64,7 +89,7 @@ export interface AnalysisConfig {
   priority?: 'low' | 'normal' | 'high';
 }
 
-export interface QueueJob<T = any> {
+export interface QueueJob<T = unknown> {
   id: string;
   data: T;
   priority: number;
@@ -101,4 +126,4 @@ export interface VideoCharacteristics {
     smoothness: string;
     consistency: string;
   };
-} 
+}

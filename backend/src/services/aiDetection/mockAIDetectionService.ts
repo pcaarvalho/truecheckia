@@ -1,6 +1,11 @@
 import { logger } from '../../utils/logger';
 import { BaseDetectionService } from './baseDetectionService';
-import { DetectionResult, TextAnalysisData, VideoAnalysisData, DetectionDetails } from '../../types/detection.types';
+import {
+  DetectionResult,
+  TextAnalysisData,
+  VideoAnalysisData,
+  DetectionDetails,
+} from '../../types/detection.types';
 import { TextAnalyzer } from '../../utils/textAnalyzer';
 import { VideoAnalyzer } from '../../utils/videoAnalyzer';
 
@@ -21,20 +26,20 @@ export class MockAIDetectionService extends BaseDetectionService {
   async analyzeText(data: TextAnalysisData): Promise<DetectionResult[]> {
     const startTime = Date.now();
     const requestId = data.requestId || this.generateRequestId();
-    
+
     logger.info(`🔍 Iniciando análise mock de texto: ${data.title || 'Sem título'} [${requestId}]`);
-    
+
     // Simula tempo de processamento realista
     await this.simulateProcessingDelay(1000, 3000);
 
     const textAnalysis = TextAnalyzer.analyzeTextCharacteristics(data.textContent);
     const baseScore = TextAnalyzer.calculateTextScore(textAnalysis);
-    
+
     const providers = ['GPTZero', 'Hive', 'OpenAI'];
     const results: DetectionResult[] = providers.map((provider, index) => {
-      const adjustedScore = this.adjustScore(baseScore, 0.1 + (index * 0.05));
-      const processingTime = Date.now() - startTime + (index * 200);
-      
+      const adjustedScore = this.adjustScore(baseScore, 0.1 + index * 0.05);
+      const processingTime = Date.now() - startTime + index * 200;
+
       const result: DetectionResult = {
         provider,
         confidence: adjustedScore,
@@ -42,7 +47,7 @@ export class MockAIDetectionService extends BaseDetectionService {
         details: this.generateProviderDetails(provider, baseScore, textAnalysis),
         processingTime,
         timestamp: new Date(),
-        requestId
+        requestId,
       };
 
       this.recordAnalysisMetrics(provider.toLowerCase(), processingTime, true);
@@ -56,20 +61,20 @@ export class MockAIDetectionService extends BaseDetectionService {
   async analyzeVideo(data: VideoAnalysisData): Promise<DetectionResult[]> {
     const startTime = Date.now();
     const requestId = data.requestId || this.generateRequestId();
-    
+
     logger.info(`🎥 Iniciando análise mock de vídeo: ${data.title || 'Sem título'} [${requestId}]`);
-    
+
     // Simula tempo de processamento maior para vídeos
     await this.simulateProcessingDelay(3000, 7000);
 
     const videoAnalysis = VideoAnalyzer.analyzeVideoCharacteristics(data.fileUrl, data.metadata);
     const baseScore = videoAnalysis.aiProbability;
-    
+
     const providers = ['Hive', 'OpenAI', 'Deepware'];
     const results: DetectionResult[] = providers.map((provider, index) => {
       const adjustedScore = this.adjustScore(baseScore, 0.15);
-      const processingTime = Date.now() - startTime + (index * 500);
-      
+      const processingTime = Date.now() - startTime + index * 500;
+
       const result: DetectionResult = {
         provider,
         confidence: adjustedScore,
@@ -77,7 +82,7 @@ export class MockAIDetectionService extends BaseDetectionService {
         details: this.generateVideoProviderDetails(provider, videoAnalysis),
         processingTime,
         timestamp: new Date(),
-        requestId
+        requestId,
       };
 
       this.recordAnalysisMetrics(`${provider.toLowerCase()}_video`, processingTime, true);
@@ -88,23 +93,27 @@ export class MockAIDetectionService extends BaseDetectionService {
     return results;
   }
 
-  private generateProviderDetails(provider: string, baseScore: number, analysis: any): DetectionDetails {
+  private generateProviderDetails(
+    provider: string,
+    baseScore: number,
+    analysis: any
+  ): DetectionDetails {
     const common = {
       wordCount: analysis.wordCount,
       textLength: analysis.wordCount * analysis.avgWordLength,
-      language: analysis.language
+      language: analysis.language,
     };
 
     switch (provider) {
       case 'GPTZero':
         return {
           ...common,
-          perplexity: 30 + (baseScore * 70) + (Math.random() - 0.5) * 10,
-          burstiness: 0.2 + (baseScore * 0.6) + (Math.random() - 0.5) * 0.1,
+          perplexity: 30 + baseScore * 70 + (Math.random() - 0.5) * 10,
+          burstiness: 0.2 + baseScore * 0.6 + (Math.random() - 0.5) * 0.1,
           markers: this.generateMarkers(baseScore),
-          confidence: this.getConfidenceLevel(baseScore)
+          confidence: this.getConfidenceLevel(baseScore),
         };
-        
+
       case 'Hive':
         return {
           ...common,
@@ -115,20 +124,21 @@ export class MockAIDetectionService extends BaseDetectionService {
           analysis: {
             lexicalDiversity: analysis.lexicalDiversity,
             repetitionScore: analysis.repetitionScore,
-            formalityScore: analysis.formalityScore
-          }
+            formalityScore: analysis.formalityScore,
+          },
         };
-        
+
       case 'OpenAI':
         return {
           ...common,
-          classification: baseScore > 0.7 ? 'likely_ai' : baseScore > 0.4 ? 'unclear' : 'likely_human',
+          classification:
+            baseScore > 0.7 ? 'likely_ai' : baseScore > 0.4 ? 'unclear' : 'likely_human',
           probability: baseScore,
           reasoning: this.generateReasoning(baseScore, analysis),
           model: 'text-davinci-003-detector',
-          tokensUsed: Math.floor(analysis.wordCount * 1.3)
+          tokensUsed: Math.floor(analysis.wordCount * 1.3),
         };
-        
+
       default:
         return common;
     }
@@ -138,7 +148,7 @@ export class MockAIDetectionService extends BaseDetectionService {
     const common = {
       resolution: analysis.resolution,
       duration: `${analysis.duration}s`,
-      artifacts: analysis.artifacts
+      artifacts: analysis.artifacts,
     };
 
     switch (provider) {
@@ -150,11 +160,11 @@ export class MockAIDetectionService extends BaseDetectionService {
           confidence: this.getConfidenceLevel(analysis.aiProbability),
           face_analysis: {
             count: analysis.faceCount,
-            quality: analysis.aiProbability > 0.7 ? 'inconsistent' : 'natural'
+            quality: analysis.aiProbability > 0.7 ? 'inconsistent' : 'natural',
           },
-          motion_analysis: analysis.motionAnalysis
+          motion_analysis: analysis.motionAnalysis,
         };
-        
+
       case 'OpenAI':
         return {
           ...common,
@@ -165,19 +175,20 @@ export class MockAIDetectionService extends BaseDetectionService {
           analysis: {
             fps: analysis.fps,
             codec: analysis.codec,
-            motionConsistency: analysis.motionAnalysis.consistency
-          }
+            motionConsistency: analysis.motionAnalysis.consistency,
+          },
         };
-        
+
       case 'Deepware':
         return {
           ...common,
           deepfake_confidence: analysis.aiProbability * 100,
           face_swap_detected: analysis.aiProbability > 0.8,
           lip_sync_score: Math.random() * 0.3 + (analysis.aiProbability > 0.7 ? 0.7 : 0),
-          temporal_artifacts: analysis.artifacts.filter((a: string) => a.includes('temporal')).length
+          temporal_artifacts: analysis.artifacts.filter((a: string) => a.includes('temporal'))
+            .length,
         };
-        
+
       default:
         return common;
     }
@@ -192,16 +203,16 @@ export class MockAIDetectionService extends BaseDetectionService {
       'estrutura_rígida',
       'transições_mecânicas',
       'ausência_de_erros',
-      'formalidade_excessiva'
+      'formalidade_excessiva',
     ];
-    
+
     const count = Math.floor(score * allMarkers.length);
     return allMarkers.slice(0, count);
   }
 
   private generateReasoning(_score: number, analysis: any): string {
     const reasons = [];
-    
+
     if (analysis.repetitionScore > 0.3) {
       reasons.push('alta repetição de palavras e estruturas');
     }
@@ -214,28 +225,28 @@ export class MockAIDetectionService extends BaseDetectionService {
     if (analysis.patternScore > 0.5) {
       reasons.push('padrões estruturais repetitivos');
     }
-    
+
     if (reasons.length === 0) {
       return 'Texto apresenta características naturais de escrita humana';
     }
-    
+
     return `Texto apresenta ${reasons.join(', ')}`;
   }
 
   private determineIfAI(provider: string, baseScore: number): boolean {
     // Diferentes provedores têm diferentes limiares
     const thresholds: Record<string, number> = {
-      'GPTZero': 0.70,
-      'Hive': 0.65,
-      'OpenAI': 0.75,
-      'Deepware': 0.60
+      GPTZero: 0.7,
+      Hive: 0.65,
+      OpenAI: 0.75,
+      Deepware: 0.6,
     };
-    
-    return baseScore > (thresholds[provider] || 0.70);
+
+    return baseScore > (thresholds[provider] || 0.7);
   }
 
   private adjustScore(baseScore: number, variation: number): number {
     const adjusted = baseScore + (Math.random() - 0.5) * variation;
     return Math.round(Math.max(0, Math.min(100, adjusted * 100)));
   }
-} 
+}

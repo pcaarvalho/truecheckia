@@ -21,7 +21,7 @@ export class MetricsService {
     this.metrics.get(key)!.push({
       value,
       timestamp: Date.now(),
-      tags
+      tags,
     });
 
     // Mantém apenas últimas métricas por chave
@@ -38,7 +38,7 @@ export class MetricsService {
 
   getAggregatedMetrics(name: string, aggregation: 'sum' | 'avg' | 'min' | 'max' | 'count'): number {
     const allMetrics: any[] = [];
-    
+
     for (const [key, metrics] of this.metrics.entries()) {
       if (key.startsWith(name)) {
         allMetrics.push(...metrics);
@@ -47,7 +47,7 @@ export class MetricsService {
 
     if (allMetrics.length === 0) return 0;
 
-    const values = allMetrics.map(m => typeof m.value === 'number' ? m.value : 0);
+    const values = allMetrics.map((m) => (typeof m.value === 'number' ? m.value : 0));
 
     switch (aggregation) {
       case 'sum':
@@ -65,14 +65,16 @@ export class MetricsService {
     }
   }
 
-  getMetricsSummary(): { 
-    totalKeys: number; 
-    totalMetrics: number; 
+  getMetricsSummary(): {
+    totalKeys: number;
+    totalMetrics: number;
     memoryUsage: number;
     topMetrics: Array<{ key: string; count: number }>;
   } {
-    const totalMetrics = Array.from(this.metrics.values())
-      .reduce((sum, metrics) => sum + metrics.length, 0);
+    const totalMetrics = Array.from(this.metrics.values()).reduce(
+      (sum, metrics) => sum + metrics.length,
+      0
+    );
 
     const topMetrics = Array.from(this.metrics.entries())
       .map(([key, metrics]) => ({ key, count: metrics.length }))
@@ -83,7 +85,7 @@ export class MetricsService {
       totalKeys: this.metrics.size,
       totalMetrics,
       memoryUsage: JSON.stringify([...this.metrics.entries()]).length,
-      topMetrics
+      topMetrics,
     };
   }
 
@@ -108,4 +110,4 @@ export class MetricsService {
       .join(',');
     return `${name}${tagStr ? `:${tagStr}` : ''}`;
   }
-} 
+}

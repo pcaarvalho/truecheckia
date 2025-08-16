@@ -30,9 +30,9 @@ export abstract class BaseDetectionService {
       } catch (error) {
         lastError = error as Error;
         logger.warn(`Operation failed (attempt ${i + 1}/${maxRetries}):`, error);
-        
+
         if (i < maxRetries - 1) {
-          await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+          await new Promise((resolve) => setTimeout(resolve, delay * Math.pow(2, i)));
         }
       }
     }
@@ -40,17 +40,21 @@ export abstract class BaseDetectionService {
     throw lastError!;
   }
 
-  protected recordAnalysisMetrics(provider: string, processingTime: number, success: boolean): void {
+  protected recordAnalysisMetrics(
+    provider: string,
+    processingTime: number,
+    success: boolean
+  ): void {
     this.metricsService.recordMetric('analysis.processing_time', processingTime, { provider });
-    this.metricsService.recordMetric('analysis.requests', 1, { 
-      provider, 
-      status: success ? 'success' : 'failure' 
+    this.metricsService.recordMetric('analysis.requests', 1, {
+      provider,
+      status: success ? 'success' : 'failure',
     });
   }
 
   protected async simulateProcessingDelay(min: number, max: number): Promise<void> {
     const delay = Math.floor(Math.random() * (max - min) + min);
-    await new Promise(resolve => setTimeout(resolve, delay));
+    await new Promise((resolve) => setTimeout(resolve, delay));
   }
 
   protected detectLanguage(text: string): string {
@@ -58,28 +62,28 @@ export abstract class BaseDetectionService {
       'pt-BR': /\b(de|da|do|que|para|com|por|uma|não|mais|foi|ser|está|são|tem|mas|ele|ela)\b/gi,
       'en-US': /\b(the|and|for|with|that|this|from|have|will|been|are|was|can|but|not|you|all)\b/gi,
       'es-ES': /\b(de|la|el|en|y|a|los|del|las|un|por|con|para|es|una)\b/gi,
-      'fr-FR': /\b(le|de|la|les|et|des|en|un|une|pour|que|dans|par|sur|avec)\b/gi
+      'fr-FR': /\b(le|de|la|les|et|des|en|un|une|pour|que|dans|par|sur|avec)\b/gi,
     };
-    
+
     const scores: Record<string, number> = {};
-    
+
     for (const [lang, pattern] of Object.entries(patterns)) {
       const matches = text.match(pattern);
       scores[lang] = matches ? matches.length : 0;
     }
-    
-    const detectedLang = Object.entries(scores).reduce((a, b) => a[1] > b[1] ? a : b)[0];
+
+    const detectedLang = Object.entries(scores).reduce((a, b) => (a[1] > b[1] ? a : b))[0];
     return detectedLang || 'unknown';
   }
 
   protected getConfidenceLevel(score: number): string {
     if (score > 0.85) return 'very_high';
-    if (score > 0.70) return 'high';
-    if (score > 0.50) return 'medium';
-    if (score > 0.30) return 'low';
+    if (score > 0.7) return 'high';
+    if (score > 0.5) return 'medium';
+    if (score > 0.3) return 'low';
     return 'very_low';
   }
 
   abstract analyzeText(data: TextAnalysisData): Promise<DetectionResult[]>;
   abstract analyzeVideo(data: VideoAnalysisData): Promise<DetectionResult[]>;
-} 
+}

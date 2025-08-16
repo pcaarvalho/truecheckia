@@ -22,7 +22,7 @@ export class RedisService {
 
     try {
       const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-      
+
       this.client = new Redis(redisUrl, {
         retryDelayOnFailover: 1000,
         maxRetriesPerRequest: 3,
@@ -36,7 +36,7 @@ export class RedisService {
         reconnectOnError: (err) => {
           const targetError = 'READONLY';
           return err.message.includes(targetError);
-        }
+        },
       });
 
       // Event listeners
@@ -53,7 +53,7 @@ export class RedisService {
       this.client.on('error', (error) => {
         this.connected = false;
         logger.error('Redis error:', error);
-        
+
         // Implementa backoff exponencial
         this.retryCount++;
         if (this.retryCount <= this.maxRetries) {
@@ -72,13 +72,12 @@ export class RedisService {
       });
 
       await this.client.connect();
-      
+
       // Testa conexão
       const pong = await this.client.ping();
       if (pong !== 'PONG') {
         throw new Error('Redis ping failed');
       }
-
     } catch (error) {
       logger.error('Failed to connect to Redis:', error);
       this.connected = false;
@@ -107,13 +106,13 @@ export class RedisService {
 
     try {
       const serializedValue = JSON.stringify(value);
-      
+
       if (ttl) {
         await this.client!.setex(key, ttl, serializedValue);
       } else {
         await this.client!.set(key, serializedValue);
       }
-      
+
       logger.debug(`Redis SET: ${key} (TTL: ${ttl || 'none'})`);
       return true;
     } catch (error) {
@@ -130,11 +129,11 @@ export class RedisService {
 
     try {
       const value = await this.client!.get(key);
-      
+
       if (value === null) {
         return null;
       }
-      
+
       const parsed = JSON.parse(value);
       logger.debug(`Redis GET: ${key} (found)`);
       return parsed;
@@ -224,11 +223,11 @@ export class RedisService {
 
     try {
       const value = await this.client!.hget(key, field);
-      
+
       if (value === null) {
         return null;
       }
-      
+
       return JSON.parse(value);
     } catch (error) {
       logger.error(`Redis HGET error for key ${key}, field ${field}:`, error);
@@ -257,11 +256,11 @@ export class RedisService {
 
     try {
       const keys = await this.client!.keys(pattern);
-      
+
       if (keys.length === 0) {
         return 0;
       }
-      
+
       const result = await this.client!.del(...keys);
       logger.info(`Redis cleared ${result} keys matching pattern: ${pattern}`);
       return result;
@@ -282,7 +281,7 @@ export class RedisService {
         connected: false,
         memory: '0',
         keys: 0,
-        uptime: 0
+        uptime: 0,
       };
     }
 
@@ -290,15 +289,15 @@ export class RedisService {
       const info = await this.client!.info('memory');
       const dbsize = await this.client!.dbsize();
       const uptime = await this.client!.info('server');
-      
+
       const memoryMatch = info.match(/used_memory_human:(.+)/);
       const uptimeMatch = uptime.match(/uptime_in_seconds:(\d+)/);
-      
+
       return {
         connected: true,
         memory: memoryMatch ? memoryMatch[1].trim() : '0',
         keys: dbsize,
-        uptime: uptimeMatch ? parseInt(uptimeMatch[1]) : 0
+        uptime: uptimeMatch ? parseInt(uptimeMatch[1]) : 0,
       };
     } catch (error) {
       logger.error('Redis STATS error:', error);
@@ -306,7 +305,7 @@ export class RedisService {
         connected: false,
         memory: '0',
         keys: 0,
-        uptime: 0
+        uptime: 0,
       };
     }
   }
@@ -336,10 +335,10 @@ export class RedisService {
       const start = Date.now();
       await this.client!.ping();
       const latency = Date.now() - start;
-      
+
       return {
         status: 'healthy',
-        latency
+        latency,
       };
     } catch (error) {
       logger.error('Redis health check failed:', error);
@@ -349,4 +348,4 @@ export class RedisService {
 }
 
 // Instância singleton
-export const redisService = RedisService.getInstance(); 
+export const redisService = RedisService.getInstance();

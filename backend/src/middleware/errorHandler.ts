@@ -6,12 +6,7 @@ export interface AppError extends Error {
   isOperational?: boolean;
 }
 
-export const errorHandler = (
-  error: AppError,
-  req: Request,
-  res: Response,
-  _next: NextFunction
-) => {
+export const errorHandler = (error: AppError, req: Request, res: Response, _next: NextFunction) => {
   let { statusCode = 500, message } = error;
 
   // Log do erro
@@ -20,21 +15,21 @@ export const errorHandler = (
     url: req.url,
     method: req.method,
     ip: req.ip,
-    userAgent: req.get('User-Agent')
+    userAgent: req.get('User-Agent'),
   });
 
   // Se é um erro operacional conhecido
   if (error.isOperational) {
     return res.status(statusCode).json({
       error: message,
-      statusCode
+      statusCode,
     });
   }
 
   // Erros de validação do Prisma
   if (error.name === 'PrismaClientKnownRequestError') {
     const prismaError = error as any;
-    
+
     switch (prismaError.code) {
       case 'P2002':
         statusCode = 409;
@@ -55,7 +50,7 @@ export const errorHandler = (
 
     return res.status(statusCode).json({
       error: message,
-      statusCode
+      statusCode,
     });
   }
 
@@ -65,7 +60,7 @@ export const errorHandler = (
     return res.status(statusCode).json({
       error: 'Dados inválidos',
       details: error.message,
-      statusCode
+      statusCode,
     });
   }
 
@@ -84,7 +79,7 @@ export const errorHandler = (
   if (error.name === 'MulterError') {
     const multerError = error as any;
     statusCode = 400;
-    
+
     switch (multerError.code) {
       case 'LIMIT_FILE_SIZE':
         message = 'Arquivo muito grande';
@@ -101,7 +96,7 @@ export const errorHandler = (
 
     return res.status(statusCode).json({
       error: message,
-      statusCode
+      statusCode,
     });
   }
 
@@ -113,7 +108,7 @@ export const errorHandler = (
   return res.status(statusCode).json({
     error: message,
     statusCode,
-    ...(process.env['NODE_ENV'] === 'development' && { stack: error.stack })
+    ...(process.env['NODE_ENV'] === 'development' && { stack: error.stack }),
   });
 };
 
@@ -126,7 +121,9 @@ export const createError = (message: string, statusCode: number = 500): AppError
 };
 
 // Middleware para capturar erros assíncronos
-export const asyncHandler = (fn: Function) => {
+export const asyncHandler = (
+  fn: (req: Request, res: Response, next: NextFunction) => Promise<void> | void
+) => {
   return (req: Request, res: Response, next: NextFunction) => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };
@@ -137,7 +134,7 @@ export const validateRequest = (req: Request, res: Response, next: NextFunction)
   if (!req.body || Object.keys(req.body).length === 0) {
     return res.status(400).json({
       error: 'Corpo da requisição vazio',
-      statusCode: 400
+      statusCode: 400,
     });
   }
   return next();
@@ -148,8 +145,8 @@ export const validateFileUpload = (req: Request, res: Response, next: NextFuncti
   if (!req.file && !req.files) {
     return res.status(400).json({
       error: 'Nenhum arquivo enviado',
-      statusCode: 400
+      statusCode: 400,
     });
   }
   return next();
-}; 
+};

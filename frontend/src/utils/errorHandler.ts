@@ -80,4 +80,4 @@ export const showInfoToast = (message: string) => {
   toast(message, {
     icon: 'ℹ️',
   });
-}; 
+};

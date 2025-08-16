@@ -13,7 +13,7 @@ router.get('/', async (_req: Request, res: Response) => {
       database: 'ok',
       redis: 'ok',
       memory: process.memoryUsage(),
-    }
+    },
   };
 
   try {
@@ -40,4 +40,4 @@ router.get('/', async (_req: Request, res: Response) => {
   return res.status(statusCode).json(healthcheck);
 });
 
-export default router; 
+export default router;

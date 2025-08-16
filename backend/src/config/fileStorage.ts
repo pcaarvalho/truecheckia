@@ -24,7 +24,7 @@ class MinIOStorage implements FileStorage {
     this.client = client;
   }
 
-  async uploadFile(fileName: string, buffer: Buffer, contentType: string): Promise<string> {
+  async uploadFile(fileName: string, buffer: Buffer, _contentType: string): Promise<string> {
     await this.client.putObject(BUCKET_NAME, fileName, buffer, buffer.length, {
       'Content-Type': contentType,
     });
@@ -51,15 +51,15 @@ class LocalStorage implements FileStorage {
     }
   }
 
-  async uploadFile(fileName: string, buffer: Buffer, contentType: string): Promise<string> {
+  async uploadFile(fileName: string, buffer: Buffer, _contentType: string): Promise<string> {
     const filePath = path.join(LOCAL_UPLOADS_DIR, fileName);
-    
+
     // Criar diretório se não existir
     const fileDir = path.dirname(filePath);
     if (!fs.existsSync(fileDir)) {
       await fs.promises.mkdir(fileDir, { recursive: true });
     }
-    
+
     await fs.promises.writeFile(filePath, buffer);
     logger.info(`📄 Arquivo salvo localmente: ${fileName}`);
     return fileName;
@@ -91,25 +91,29 @@ export async function setupFileStorage() {
       return;
     }
 
-    if (process.env['MINIO_ENDPOINT'] && process.env['MINIO_ACCESS_KEY'] && process.env['MINIO_SECRET_KEY']) {
+    if (
+      process.env['MINIO_ENDPOINT'] &&
+      process.env['MINIO_ACCESS_KEY'] &&
+      process.env['MINIO_SECRET_KEY']
+    ) {
       minioClient = new Client({
         endPoint: process.env['MINIO_ENDPOINT'],
         port: parseInt(process.env['MINIO_PORT'] || '9000'),
         useSSL: process.env['MINIO_USE_SSL'] === 'true',
         accessKey: process.env['MINIO_ACCESS_KEY'],
-        secretKey: process.env['MINIO_SECRET_KEY']
+        secretKey: process.env['MINIO_SECRET_KEY'],
       });
 
       // Testa conexão
       await minioClient.listBuckets();
-      
+
       // Verifica se o bucket existe, se não, cria
       const bucketExists = await minioClient.bucketExists(BUCKET_NAME);
       if (!bucketExists) {
         await minioClient.makeBucket(BUCKET_NAME, 'us-east-1');
         logger.info(`✅ Bucket ${BUCKET_NAME} criado`);
       }
-      
+
       fileStorage = new MinIOStorage(minioClient);
       logger.info('✅ MinIO conectado');
     } else {

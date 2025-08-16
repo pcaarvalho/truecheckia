@@ -21,7 +21,10 @@ export class QueueService extends EventEmitter {
     return QueueService.instance;
   }
 
-  async addJob<T>(data: T, options: { priority?: number; maxRetries?: number } = {}): Promise<string> {
+  async addJob<T>(
+    data: T,
+    options: { priority?: number; maxRetries?: number } = {}
+  ): Promise<string> {
     const job: QueueJob<T> = {
       id: this.generateJobId(),
       data,
@@ -29,7 +32,7 @@ export class QueueService extends EventEmitter {
       retries: 0,
       maxRetries: options.maxRetries || 3,
       createdAt: new Date(),
-      status: 'pending'
+      status: 'pending',
     };
 
     this.queue.push(job);
@@ -51,21 +54,23 @@ export class QueueService extends EventEmitter {
     this.processing = true;
 
     while (this.queue.length > 0 && this.activeJobs < this.concurrency) {
-      const job = this.queue.find(j => j.status === 'pending');
+      const job = this.queue.find((j) => j.status === 'pending');
       if (!job) break;
 
       this.activeJobs++;
-      this.processJob(job).catch(error => {
-        logger.error(`Error processing job ${job.id}:`, error);
-      }).finally(() => {
-        this.activeJobs--;
-      });
+      this.processJob(job)
+        .catch((error) => {
+          logger.error(`Error processing job ${job.id}:`, error);
+        })
+        .finally(() => {
+          this.activeJobs--;
+        });
     }
 
     this.processing = false;
 
     // Reprocessa se ainda houver jobs pendentes
-    if (this.queue.some(j => j.status === 'pending')) {
+    if (this.queue.some((j) => j.status === 'pending')) {
       setTimeout(() => this.processQueue(), 100);
     }
   }
@@ -86,12 +91,12 @@ export class QueueService extends EventEmitter {
           clearTimeout(timeout);
           resolve();
         });
-        
+
         this.once(`job:${job.id}:error`, (error) => {
           clearTimeout(timeout);
           reject(error);
         });
-        
+
         this.emit('job:process', job);
       });
 
@@ -100,8 +105,7 @@ export class QueueService extends EventEmitter {
       this.emit('job:completed', job);
 
       // Remove job da fila após conclusão
-      this.queue = this.queue.filter(j => j.id !== job.id);
-
+      this.queue = this.queue.filter((j) => j.id !== job.id);
     } catch (error) {
       job.error = error as Error;
       job.retries++;
@@ -114,7 +118,7 @@ export class QueueService extends EventEmitter {
         job.status = 'failed';
         logger.error(`Job ${job.id} failed after ${job.maxRetries} retries`);
         this.emit('job:failed', job);
-        this.queue = this.queue.filter(j => j.id !== job.id);
+        this.queue = this.queue.filter((j) => j.id !== job.id);
       }
     }
   }
@@ -128,15 +132,15 @@ export class QueueService extends EventEmitter {
   }
 
   getJob(jobId: string): QueueJob | undefined {
-    return this.queue.find(j => j.id === jobId);
+    return this.queue.find((j) => j.id === jobId);
   }
 
   getQueueStatus(): { pending: number; processing: number; activeJobs: number; totalJobs: number } {
     return {
-      pending: this.queue.filter(j => j.status === 'pending').length,
-      processing: this.queue.filter(j => j.status === 'processing').length,
+      pending: this.queue.filter((j) => j.status === 'pending').length,
+      processing: this.queue.filter((j) => j.status === 'processing').length,
       activeJobs: this.activeJobs,
-      totalJobs: this.queue.length
+      totalJobs: this.queue.length,
     };
   }
 
@@ -150,4 +154,4 @@ export class QueueService extends EventEmitter {
   private generateJobId(): string {
     return `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
-} 
+}

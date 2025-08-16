@@ -25,12 +25,12 @@ export class CacheService {
   set(key: string, data: any, ttl: number = this.DEFAULT_TTL): void {
     this.cache.set(key, {
       data,
-      expiry: Date.now() + ttl
+      expiry: Date.now() + ttl,
     });
     logger.debug(`Cache set for key: ${key.substring(0, 8)}...`);
   }
 
-  get(key: string): any | null {
+  get(key: string): any {
     const cached = this.cache.get(key);
     if (!cached) return null;
 
@@ -54,7 +54,7 @@ export class CacheService {
   getStats(): { size: number; memoryUsage: number } {
     return {
       size: this.cache.size,
-      memoryUsage: JSON.stringify([...this.cache.entries()]).length
+      memoryUsage: JSON.stringify([...this.cache.entries()]).length,
     };
   }
 
@@ -73,4 +73,4 @@ export class CacheService {
       logger.debug(`Cleaned ${deletedCount} expired cache entries`);
     }
   }
-} 
+}

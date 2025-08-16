@@ -12,21 +12,14 @@ interface ToastProps {
   onClose: (id: string) => void;
 }
 
-const Toast: React.FC<ToastProps> = ({
-  id,
-  type,
-  title,
-  message,
-  duration = 5000,
-  onClose
-}) => {
+const Toast: React.FC<ToastProps> = ({ id, type, title, message, duration = 5000, onClose }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
 
   useEffect(() => {
     // Animar entrada
     const timer = setTimeout(() => setIsVisible(true), 100);
-    
+
     // Auto-remover após duração
     const autoRemoveTimer = setTimeout(() => {
       handleClose();
@@ -91,30 +84,20 @@ const Toast: React.FC<ToastProps> = ({
   return (
     <div
       className={`fixed top-4 right-4 z-50 max-w-sm w-full transform transition-all duration-300 ${
-        isVisible && !isLeaving
-          ? 'translate-x-0 opacity-100'
-          : 'translate-x-full opacity-0'
+        isVisible && !isLeaving ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
       }`}
     >
       <div
         className={`p-4 rounded-xl backdrop-blur-sm border ${getBorderColor()} ${getBackgroundColor()} shadow-2xl`}
       >
         <div className="flex items-start space-x-3">
-          <div className="flex-shrink-0 mt-0.5">
-            {getIcon()}
-          </div>
-          
+          <div className="flex-shrink-0 mt-0.5">{getIcon()}</div>
+
           <div className="flex-1 min-w-0">
-            <h4 className="text-sm font-semibold text-white">
-              {title}
-            </h4>
-            {message && (
-              <p className="mt-1 text-sm text-slate-300">
-                {message}
-              </p>
-            )}
+            <h4 className="text-sm font-semibold text-white">{title}</h4>
+            {message && <p className="mt-1 text-sm text-slate-300">{message}</p>}
           </div>
-          
+
           <button
             onClick={handleClose}
             className="flex-shrink-0 text-slate-400 hover:text-white transition-colors"
@@ -143,9 +126,9 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const newToast: ToastProps = {
       ...toast,
       id,
-      onClose: removeToast
+      onClose: removeToast,
     };
-    
+
     setToasts(prev => [...prev, newToast]);
   };
 
@@ -173,4 +156,4 @@ export const useToast = () => {
   return context;
 };
 
-export default Toast; 
+export default Toast;

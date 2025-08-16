@@ -41,7 +41,7 @@ const ParticleBackground: React.FC = () => {
           vx: (Math.random() - 0.5) * 0.5,
           vy: (Math.random() - 0.5) * 0.5,
           size: Math.random() * 2 + 1,
-          opacity: Math.random() * 0.5 + 0.1
+          opacity: Math.random() * 0.5 + 0.1,
         });
       }
       return particles;
@@ -72,7 +72,7 @@ const ParticleBackground: React.FC = () => {
         // Conectar partículas próximas
         particlesRef.current.forEach((otherParticle, otherIndex) => {
           if (index === otherIndex) return;
-          
+
           const dx = particle.x - otherParticle.x;
           const dy = particle.y - otherParticle.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
@@ -110,4 +110,4 @@ const ParticleBackground: React.FC = () => {
   );
 };
 
-export default ParticleBackground; 
+export default ParticleBackground;

@@ -11,33 +11,33 @@ export const helmetConfig = helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com'],
       scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https://api.anthropic.com"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      connectSrc: ["'self'", 'https://api.anthropic.com'],
       frameSrc: ["'none'"],
-      objectSrc: ["'none'"]
-    }
+      objectSrc: ["'none'"],
+    },
   },
   crossOriginEmbedderPolicy: false,
   hsts: {
     maxAge: 31536000,
     includeSubDomains: true,
-    preload: true
-  }
+    preload: true,
+  },
 });
 
 // Rate limiting inteligente por endpoint
 export const createRateLimit = (windowMs: number, max: number, message?: string) => {
   const isDevelopment = process.env.NODE_ENV === 'development';
-  
+
   return rateLimit({
     windowMs: isDevelopment ? 60000 : windowMs, // 1 min em dev vs configurado em prod
     max: isDevelopment ? 1000 : max, // 1000 req/min em dev vs configurado em prod
     message: {
       error: message || 'Muitas tentativas. Tente novamente mais tarde.',
-      retryAfter: Math.ceil(windowMs / 1000)
+      retryAfter: Math.ceil(windowMs / 1000),
     },
     standardHeaders: true,
     legacyHeaders: false,
@@ -57,13 +57,13 @@ export const createRateLimit = (windowMs: number, max: number, message?: string)
       logger.warn('Rate limit exceeded', {
         ip: req.ip,
         url: req.url,
-        userAgent: req.get('User-Agent')
+        userAgent: req.get('User-Agent'),
       });
       res.status(429).json({
         error: message || 'Muitas tentativas. Tente novamente mais tarde.',
-        retryAfter: Math.ceil(windowMs / 1000)
+        retryAfter: Math.ceil(windowMs / 1000),
       });
-    }
+    },
   });
 };
 
@@ -102,43 +102,40 @@ export const sanitizeInput = (req: Request, res: Response, next: NextFunction) =
         return xss(obj, {
           whiteList: {}, // Remove todas as tags HTML
           stripIgnoreTag: true,
-          stripIgnoreTagBody: ['script']
+          stripIgnoreTagBody: ['script'],
         });
       }
-      
+
       if (Array.isArray(obj)) {
         return obj.map(sanitizeObject);
       }
-      
+
       if (obj !== null && typeof obj === 'object') {
         const sanitized: any = {};
         for (const key in obj) {
-          if (obj.hasOwnProperty(key)) {
+          if (Object.prototype.hasOwnProperty.call(obj, key)) {
             sanitized[key] = sanitizeObject(obj[key]);
           }
         }
         return sanitized;
       }
-      
+
       return obj;
     };
 
     if (req.body) req.body = sanitizeObject(req.body);
     if (req.query) req.query = sanitizeObject(req.query);
     if (req.params) req.params = sanitizeObject(req.params);
-    
+
     next();
   });
 };
 
 // Validadores comuns
-export const validateEmail = () => 
-  body('email')
-    .isEmail()
-    .normalizeEmail()
-    .withMessage('Email inválido');
+export const validateEmail = () =>
+  body('email').isEmail().normalizeEmail().withMessage('Email inválido');
 
-export const validatePassword = () => 
+export const validatePassword = () =>
   body('password')
     .isLength({ min: 6, max: 128 })
     .withMessage('Senha deve ter entre 6 e 128 caracteres')
@@ -156,15 +153,15 @@ export const validateText = (field: string = 'textContent', maxLength: number = 
       const suspiciousPatterns = [
         /(.)\1{50,}/, // Repetição excessiva de caracteres
         /[^\w\s\p{P}\p{S}]/u, // Caracteres não permitidos
-        /(http|https|ftp):\/\/[^\s]+/gi // URLs não permitidas em texto
+        /(http|https|ftp):\/\/[^\s]+/gi, // URLs não permitidas em texto
       ];
-      
+
       for (const pattern of suspiciousPatterns) {
         if (pattern.test(value)) {
           throw new Error('Conteúdo suspeito detectado');
         }
       }
-      
+
       return true;
     });
 
@@ -176,9 +173,7 @@ export const validateTitle = () =>
     .withMessage('Título deve ter no máximo 200 caracteres');
 
 export const validateUUID = (field: string) =>
-  param(field)
-    .isUUID()
-    .withMessage(`${field} deve ser um UUID válido`);
+  param(field).isUUID().withMessage(`${field} deve ser um UUID válido`);
 
 export const validatePagination = () => [
   query('page')
@@ -188,31 +183,31 @@ export const validatePagination = () => [
   query('limit')
     .optional()
     .isInt({ min: 1, max: 100 })
-    .withMessage('Limit deve ser um número entre 1 e 100')
+    .withMessage('Limit deve ser um número entre 1 e 100'),
 ];
 
 // Middleware para verificar validação
 export const checkValidation = (req: Request, res: Response, next: NextFunction) => {
   const errors = validationResult(req);
-  
+
   if (!errors.isEmpty()) {
     logger.warn('Validation failed', {
       errors: errors.array(),
       body: req.body,
       query: req.query,
       params: req.params,
-      ip: req.ip
+      ip: req.ip,
     });
-    
+
     return res.status(400).json({
       error: 'Dados inválidos',
-      details: errors.array().map(err => ({
+      details: errors.array().map((err) => ({
         field: err.type === 'field' ? err.path : 'unknown',
-        message: err.msg
-      }))
+        message: err.msg,
+      })),
     });
   }
-  
+
   next();
 };
 
@@ -220,27 +215,27 @@ export const checkValidation = (req: Request, res: Response, next: NextFunction)
 export const securityHeaders = (req: Request, res: Response, next: NextFunction) => {
   // Remove headers que expõem informações do servidor
   res.removeHeader('X-Powered-By');
-  
+
   // Headers de segurança adicionais
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  
+
   // Controle de cache para rotas sensíveis
   if (req.path.includes('/api/')) {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
   }
-  
+
   next();
 };
 
 // Middleware de logging de segurança
 export const securityLogger = (req: Request, res: Response, next: NextFunction) => {
   const startTime = Date.now();
-  
+
   res.on('finish', () => {
     const duration = Date.now() - startTime;
     const logData = {
@@ -250,9 +245,9 @@ export const securityLogger = (req: Request, res: Response, next: NextFunction) 
       userAgent: req.get('User-Agent'),
       statusCode: res.statusCode,
       duration,
-      contentLength: res.get('Content-Length') || 0
+      contentLength: res.get('Content-Length') || 0,
     };
-    
+
     // Log suspeito para status de erro
     if (res.statusCode >= 400) {
       logger.warn('HTTP Error', logData);
@@ -260,7 +255,7 @@ export const securityLogger = (req: Request, res: Response, next: NextFunction) 
       logger.info('HTTP Request', logData);
     }
   });
-  
+
   next();
 };
 
@@ -274,29 +269,29 @@ export const detectAttacks = (req: Request, res: Response, next: NextFunction) =
     // Command injection patterns
     /[;&|`$(){}[\]]/,
     // Path traversal
-    /\.\.[\/\\]/
+    /\.\.[/\\]/,
   ];
-  
+
   const checkSuspicious = (value: string): boolean => {
-    return suspicious.some(pattern => pattern.test(value));
+    return suspicious.some((pattern) => pattern.test(value));
   };
-  
+
   const checkObject = (obj: any): boolean => {
     if (typeof obj === 'string') {
       return checkSuspicious(obj);
     }
-    
+
     if (Array.isArray(obj)) {
       return obj.some(checkObject);
     }
-    
+
     if (obj && typeof obj === 'object') {
       return Object.values(obj).some(checkObject);
     }
-    
+
     return false;
   };
-  
+
   if (checkObject(req.body) || checkObject(req.query) || checkObject(req.params)) {
     logger.error('Suspicious request detected', {
       ip: req.ip,
@@ -305,13 +300,13 @@ export const detectAttacks = (req: Request, res: Response, next: NextFunction) =
       body: req.body,
       query: req.query,
       params: req.params,
-      userAgent: req.get('User-Agent')
+      userAgent: req.get('User-Agent'),
     });
-    
+
     return res.status(403).json({
-      error: 'Requisição suspeita detectada'
+      error: 'Requisição suspeita detectada',
     });
   }
-  
+
   next();
-}; 
+};

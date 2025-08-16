@@ -25,7 +25,7 @@ export const RegisterPage: React.FC = () => {
     hasUpperCase: false,
     hasLowerCase: false,
     hasNumber: false,
-    hasSpecialChar: false
+    hasSpecialChar: false,
   });
 
   const { register, loading } = useAuth();
@@ -37,7 +37,7 @@ export const RegisterPage: React.FC = () => {
       hasUpperCase: /[A-Z]/.test(password),
       hasLowerCase: /[a-z]/.test(password),
       hasNumber: /\d/.test(password),
-      hasSpecialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+      hasSpecialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password),
     };
   };
 
@@ -77,7 +77,7 @@ export const RegisterPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (validateForm()) {
       try {
         await register(name, email, password);
@@ -95,7 +95,7 @@ export const RegisterPage: React.FC = () => {
       { key: 'hasUpperCase', text: 'Uma letra maiúscula' },
       { key: 'hasLowerCase', text: 'Uma letra minúscula' },
       { key: 'hasNumber', text: 'Um número' },
-      { key: 'hasSpecialChar', text: 'Um caractere especial' }
+      { key: 'hasSpecialChar', text: 'Um caractere especial' },
     ];
 
     return (
@@ -107,7 +107,11 @@ export const RegisterPage: React.FC = () => {
             ) : (
               <X className="w-3 h-3 text-red-500 mr-1" />
             )}
-            <span className={criteria[req.key as keyof PasswordStrength] ? 'text-green-600' : 'text-red-600'}>
+            <span
+              className={
+                criteria[req.key as keyof PasswordStrength] ? 'text-green-600' : 'text-red-600'
+              }
+            >
               {req.text}
             </span>
           </div>
@@ -125,9 +129,7 @@ export const RegisterPage: React.FC = () => {
               <span className="text-white font-bold text-lg">TC</span>
             </div>
           </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Crie sua conta
-          </h2>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Crie sua conta</h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Ou{' '}
             <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
@@ -135,7 +137,7 @@ export const RegisterPage: React.FC = () => {
             </Link>
           </p>
         </div>
-        
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
@@ -149,7 +151,7 @@ export const RegisterPage: React.FC = () => {
                 autoComplete="name"
                 required
                 value={name}
-                onChange={(e) => {
+                onChange={e => {
                   setName(e.target.value);
                   setErrors(prev => ({ ...prev, name: '' }));
                 }}
@@ -159,9 +161,7 @@ export const RegisterPage: React.FC = () => {
                 placeholder="Seu nome completo"
                 disabled={loading}
               />
-              {errors.name && (
-                <p className="mt-1 text-sm text-red-600">{errors.name}</p>
-              )}
+              {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
             </div>
 
             <div>
@@ -175,7 +175,7 @@ export const RegisterPage: React.FC = () => {
                 autoComplete="email"
                 required
                 value={email}
-                onChange={(e) => {
+                onChange={e => {
                   setEmail(e.target.value);
                   setErrors(prev => ({ ...prev, email: '' }));
                 }}
@@ -185,11 +185,9 @@ export const RegisterPage: React.FC = () => {
                 placeholder="Seu email"
                 disabled={loading}
               />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
-              )}
+              {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
             </div>
-            
+
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Senha
@@ -202,7 +200,7 @@ export const RegisterPage: React.FC = () => {
                   autoComplete="new-password"
                   required
                   value={password}
-                  onChange={(e) => {
+                  onChange={e => {
                     setPassword(e.target.value);
                     setPasswordStrength(checkPasswordStrength(e.target.value));
                     setErrors(prev => ({ ...prev, password: '' }));
@@ -226,12 +224,8 @@ export const RegisterPage: React.FC = () => {
                   )}
                 </button>
               </div>
-              {password && (
-                <PasswordStrengthIndicator criteria={passwordStrength} />
-              )}
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
-              )}
+              {password && <PasswordStrengthIndicator criteria={passwordStrength} />}
+              {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
             </div>
 
             <div>
@@ -246,7 +240,7 @@ export const RegisterPage: React.FC = () => {
                   autoComplete="new-password"
                   required
                   value={confirmPassword}
-                  onChange={(e) => {
+                  onChange={e => {
                     setConfirmPassword(e.target.value);
                     setErrors(prev => ({ ...prev, confirmPassword: '' }));
                   }}
@@ -316,4 +310,4 @@ export const RegisterPage: React.FC = () => {
       </div>
     </div>
   );
-}; 
+};

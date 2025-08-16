@@ -1,0 +1,8 @@
+dist/
+node_modules/
+coverage/
+.vite/
+public/
+package-lock.json
+*.config.js
+*.config.ts

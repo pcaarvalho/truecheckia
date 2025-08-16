@@ -18,10 +18,12 @@ const app = express();
 const PORT = process.env['PORT'] || 3001;
 
 // Middlewares básicos
-app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: ['http://localhost:5173', 'http://localhost:3000'],
+    credentials: true,
+  })
+);
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -41,7 +43,7 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     status: 'ready',
     features: ['auth', 'text-analysis', 'history'],
-    health: '/health'
+    health: '/health',
   });
 });
 
@@ -60,7 +62,7 @@ app.use('*', (req, res) => {
   res.status(404).json({
     error: 'Endpoint não encontrado',
     path: req.originalUrl,
-    suggestion: 'Verifique a documentação da API'
+    suggestion: 'Verifique a documentação da API',
   });
 });
 
@@ -68,11 +70,11 @@ app.use('*', (req, res) => {
 async function startServer() {
   try {
     logger.info('🚀 Iniciando TrueCheckIA MVP...');
-    
+
     // Configurar banco
     await setupDatabase();
     logger.info('✅ Banco de dados conectado');
-    
+
     app.listen(PORT, () => {
       logger.info(`🌟 TrueCheckIA MVP rodando na porta ${PORT}`);
       logger.info(`🏥 Health check: http://localhost:${PORT}/health`);
@@ -80,7 +82,7 @@ async function startServer() {
       logger.info(`📱 Funcionalidades ativas: Login, Análise de Texto, Histórico`);
       console.log('\n=== TRUECHECKIA MVP READY ===');
       console.log(`✅ Backend: http://localhost:${PORT}`);
-      console.log(`✅ Health: http://localhost:${PORT}/health`); 
+      console.log(`✅ Health: http://localhost:${PORT}/health`);
       console.log(`✅ Status: FUNCIONANDO`);
       console.log('===============================\n');
     });
@@ -103,4 +105,4 @@ process.on('SIGINT', () => {
 
 startServer();
 
-export default app; 
+export default app;

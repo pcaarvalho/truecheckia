@@ -8,7 +8,7 @@ export const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
+
   const { login, loading } = useAuth();
 
   const validateForm = (): boolean => {
@@ -32,7 +32,7 @@ export const LoginPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (validateForm()) {
       try {
         await login(email, password);
@@ -62,7 +62,7 @@ export const LoginPage: React.FC = () => {
             </Link>
           </p>
         </div>
-        
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
@@ -76,7 +76,7 @@ export const LoginPage: React.FC = () => {
                 autoComplete="email"
                 required
                 value={email}
-                onChange={(e) => {
+                onChange={e => {
                   setEmail(e.target.value);
                   setErrors(prev => ({ ...prev, email: '' }));
                 }}
@@ -86,11 +86,9 @@ export const LoginPage: React.FC = () => {
                 placeholder="Seu email"
                 disabled={loading}
               />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
-              )}
+              {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
             </div>
-            
+
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Senha
@@ -103,7 +101,7 @@ export const LoginPage: React.FC = () => {
                   autoComplete="current-password"
                   required
                   value={password}
-                  onChange={(e) => {
+                  onChange={e => {
                     setPassword(e.target.value);
                     setErrors(prev => ({ ...prev, password: '' }));
                   }}
@@ -126,9 +124,7 @@ export const LoginPage: React.FC = () => {
                   )}
                 </button>
               </div>
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
-              )}
+              {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
             </div>
           </div>
 
@@ -172,4 +168,4 @@ export const LoginPage: React.FC = () => {
       </div>
     </div>
   );
-}; 
+};

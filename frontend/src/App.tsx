@@ -26,21 +26,21 @@ const queryClient = new QueryClient({
 
 function App() {
   console.log('App component rendering...');
-  
+
   // Verificar se o React está funcionando
   if (typeof React === 'undefined') {
     console.error('React não está definido!');
     return null;
   }
-  
+
   // Verificar se o DOM está funcionando
   if (typeof document === 'undefined') {
     console.error('Document não está definido!');
     return null;
   }
-  
+
   console.log('React e DOM estão funcionando!');
-  
+
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
@@ -52,12 +52,12 @@ function App() {
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
-                
+
                 {/* Protected routes without Layout */}
                 <Route element={<ProtectedRoute />}>
                   <Route path="/select-plan" element={<SelectPlan />} />
                 </Route>
-                
+
                 {/* Protected routes with Layout */}
                 <Route element={<ProtectedRoute />}>
                   <Route element={<Layout />}>
@@ -66,7 +66,7 @@ function App() {
                     {/* Add more protected routes here */}
                   </Route>
                 </Route>
-                
+
                 {/* Catch-all route - Redirect to home */}
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
@@ -78,4 +78,4 @@ function App() {
   );
 }
 
-export default App; 
+export default App;

@@ -15,4 +15,4 @@ export async function setupDatabase() {
   }
 }
 
-export { prisma }; 
+export { prisma };

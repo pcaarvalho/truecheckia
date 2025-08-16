@@ -1,37 +1,33 @@
 import express from 'express';
 import cors from 'cors';
-import helmet from 'helmet';
 import compression from 'compression';
 import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import dotenv from 'dotenv';
-import { Request, Response, NextFunction } from 'express';
+import { validateJwtToken } from './middleware/auth';
 
 // Configurações
 dotenv.config();
 
 // Middlewares e utilitários
 import { errorHandler } from './middleware/errorHandler';
-import { smartAuthLimiter as authLimiter, smartApiLimiter as apiLimiter } from './middleware/rateLimiter';
 import { logger } from './utils/logger';
 import { env } from './config/env';
-import { 
-  helmetConfig, 
-  apiRateLimit, 
-  sanitizeInput, 
-  securityHeaders, 
+import {
+  helmetConfig,
+  apiRateLimit,
+  sanitizeInput,
+  securityHeaders,
   securityLogger,
-  detectAttacks 
+  detectAttacks,
 } from './middleware/security';
 
 // Configurações de banco e serviços
 import { setupDatabase } from './config/database';
 import { setupRedis } from './config/redis';
-import { setupMinIO } from './config/minio';
 import { setupFileStorage } from './config/fileStorage';
-import { setupSwagger } from './config/swagger';
 
 // Rotas
 import { authRoutes } from './routes/auth';
@@ -52,26 +48,26 @@ const swaggerOptions = {
       description: 'API para detecção de conteúdo gerado por IA',
       contact: {
         name: 'TrueCheckIA Team',
-        email: 'support@truecheckia.com'
-      }
+        email: 'support@truecheckia.com',
+      },
     },
     servers: [
       {
         url: `http://localhost:${env.PORT}`,
-        description: 'Servidor de desenvolvimento'
-      }
+        description: 'Servidor de desenvolvimento',
+      },
     ],
     components: {
       securitySchemes: {
         bearerAuth: {
           type: 'http',
           scheme: 'bearer',
-          bearerFormat: 'JWT'
-        }
-      }
-    }
+          bearerFormat: 'JWT',
+        },
+      },
+    },
   },
-  apis: ['./src/routes/*.ts', './src/middleware/*.ts']
+  apis: ['./src/routes/*.ts', './src/middleware/*.ts'],
 };
 
 const specs = swaggerJsdoc(swaggerOptions);
@@ -85,12 +81,12 @@ class Server {
     this.app = express();
     this.server = http.createServer(this.app);
     this.io = new SocketIOServer(this.server, {
-  cors: {
-        origin: process.env['FRONTEND_URL'] || "http://localhost:3000",
-        methods: ["GET", "POST"],
-        credentials: true
+      cors: {
+        origin: process.env['FRONTEND_URL'] || 'http://localhost:3000',
+        methods: ['GET', 'POST'],
+        credentials: true,
       },
-      transports: ['websocket', 'polling']
+      transports: ['websocket', 'polling'],
     });
   }
 
@@ -136,7 +132,6 @@ class Server {
       // Inicializa sistema de storage (MinIO ou local)
       await setupFileStorage();
       logger.info('✅ Sistema de storage configurado');
-
     } catch (error) {
       logger.error('❌ Erro ao inicializar serviços:', error);
       // Continua mesmo com falha nos serviços externos
@@ -154,56 +149,64 @@ class Server {
     this.app.use(securityLogger);
 
     // CORS
-    this.app.use(cors({
-      origin: (origin, callback) => {
-        const allowedOrigins = [
-          'http://localhost:3000',
-          'http://localhost:5173',
-          process.env['FRONTEND_URL']
-        ].filter(Boolean);
+    this.app.use(
+      cors({
+        origin: (origin, callback) => {
+          const allowedOrigins = [
+            'http://localhost:3000',
+            'http://localhost:5173',
+            process.env['FRONTEND_URL'],
+          ].filter(Boolean);
 
-        if (!origin || allowedOrigins.includes(origin)) {
-          callback(null, true);
-        } else {
-          logger.warn(`CORS bloqueado para origem: ${origin}`);
-          callback(new Error('Não permitido pelo CORS'));
-        }
-      },
-      credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-    }));
+          if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+          } else {
+            logger.warn(`CORS bloqueado para origem: ${origin}`);
+            callback(new Error('Não permitido pelo CORS'));
+          }
+        },
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      })
+    );
 
     // Compressão
-    this.app.use(compression({
-      level: 6,
-      threshold: 1024,
-      filter: (req, res) => {
-        if (req.headers['x-no-compression']) {
-          return false;
-        }
-        return compression.filter(req, res);
-      }
-}));
+    this.app.use(
+      compression({
+        level: 6,
+        threshold: 1024,
+        filter: (req, res) => {
+          if (req.headers['x-no-compression']) {
+            return false;
+          }
+          return compression.filter(req, res);
+        },
+      })
+    );
 
-// Rate limiting
+    // Rate limiting
     this.app.use('/api/', apiRateLimit);
 
     // Body parsing
-    this.app.use(express.json({ 
-      limit: '10mb',
-      verify: (req, res, buf) => {
-        // Verifica tamanho do payload
-        if (buf.length > 10 * 1024 * 1024) {
-          throw new Error('Payload muito grande');
-        }
-      }
-    }));
-    
-    this.app.use(express.urlencoded({ 
-      extended: true, 
-      limit: '10mb' 
-    }));
+    this.app.use(
+      express.json({
+        limit: '10mb',
+        verify: (req, res, buf) => {
+          // Verifica tamanho do payload
+          if (buf.length > 10 * 1024 * 1024) {
+            throw new Error('Payload muito grande');
+          }
+        },
+      })
+    );
+
+    this.app.use(
+      express.urlencoded({
+        extended: true,
+        limit: '10mb',
+      })
+    );
 
     // Sanitização
     this.app.use(sanitizeInput);
@@ -212,23 +215,27 @@ class Server {
     this.app.use('/uploads', express.static('uploads'));
 
     // Documentação Swagger
-    this.app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
-      explorer: true,
-      customCss: '.swagger-ui .topbar { display: none }',
-      customSiteTitle: 'TrueCheckIA API Documentation'
-    }));
+    this.app.use(
+      '/api-docs',
+      swaggerUi.serve,
+      swaggerUi.setup(specs, {
+        explorer: true,
+        customCss: '.swagger-ui .topbar { display: none }',
+        customSiteTitle: 'TrueCheckIA API Documentation',
+      })
+    );
   }
 
   private setupRoutes(): void {
     // Rota raiz
     this.app.get('/', (req, res) => {
-  res.json({
-    message: 'TrueCheckIA API',
-    version: '1.0.0',
+      res.json({
+        message: 'TrueCheckIA API',
+        version: '1.0.0',
         docs: '/api-docs',
-        health: '/health'
-  });
-});
+        health: '/health',
+      });
+    });
 
     // Rotas da API
     this.app.use('/health', healthRoutes);
@@ -243,13 +250,13 @@ class Server {
     this.app.use('*', (req, res) => {
       logger.warn(`Rota não encontrada: ${req.method} ${req.originalUrl}`, {
         ip: req.ip,
-        userAgent: req.get('User-Agent')
+        userAgent: req.get('User-Agent'),
       });
-      
+
       res.status(404).json({
         error: 'Endpoint não encontrado',
         path: req.originalUrl,
-        method: req.method
+        method: req.method,
       });
     });
   }
@@ -258,25 +265,51 @@ class Server {
     this.io.on('connection', (socket) => {
       logger.info(`WebSocket conectado: ${socket.id}`, {
         userAgent: socket.handshake.headers['user-agent'],
-        ip: socket.handshake.address
+        ip: socket.handshake.address,
       });
 
       // Autenticação WebSocket
-      socket.on('authenticate', (token) => {
+      socket.on('authenticate', async (token) => {
         try {
-          // TODO: Validar JWT token
-          logger.info(`WebSocket autenticado: ${socket.id}`);
-          socket.emit('authenticated', { success: true });
-    } catch (error) {
-          logger.warn(`Falha na autenticação WebSocket: ${socket.id}`, error);
-          socket.emit('authentication-error', { error: 'Token inválido' });
+          const user = await validateJwtToken(token);
+
+          if (!user) {
+            logger.warn(`Falha na autenticação WebSocket: ${socket.id} - Token inválido`);
+            socket.emit('authentication-error', { error: 'Token inválido' });
+            return;
+          }
+
+          // Armazena dados do usuário no socket
+          socket.data.user = user;
+          socket.data.authenticated = true;
+
+          logger.info(`WebSocket autenticado: ${socket.id} - Usuário: ${user.email}`);
+          socket.emit('authenticated', {
+            success: true,
+            user: {
+              id: user.id,
+              email: user.email,
+              role: user.role,
+              plan: user.plan,
+            },
+          });
+        } catch (error) {
+          logger.error(`Erro na autenticação WebSocket: ${socket.id}`, error);
+          socket.emit('authentication-error', { error: 'Erro ao autenticar' });
         }
       });
 
-      // Entrada em sala de análise
+      // Entrada em sala de análise (requer autenticação)
       socket.on('join-analysis', (analysisId) => {
+        if (!socket.data.authenticated) {
+          socket.emit('error', { message: 'Autenticação necessária' });
+          return;
+        }
+
         socket.join(`analysis-${analysisId}`);
-        logger.debug(`Socket ${socket.id} entrou na sala analysis-${analysisId}`);
+        logger.debug(
+          `Socket ${socket.id} (usuário: ${socket.data.user?.email}) entrou na sala analysis-${analysisId}`
+        );
       });
 
       // Saída de sala de análise
@@ -285,7 +318,7 @@ class Server {
         logger.debug(`Socket ${socket.id} saiu da sala analysis-${analysisId}`);
       });
 
-  // Desconexão
+      // Desconexão
       socket.on('disconnect', (reason) => {
         logger.info(`WebSocket desconectado: ${socket.id}`, { reason });
       });
@@ -293,8 +326,8 @@ class Server {
       // Erro
       socket.on('error', (error) => {
         logger.error(`WebSocket erro: ${socket.id}`, error);
-  });
-});
+      });
+    });
   }
 
   private setupErrorHandling(): void {
@@ -302,7 +335,7 @@ class Server {
     this.app.use(errorHandler);
 
     // Tratamento de erros não capturados
-    process.on('unhandledRejection', (reason, promise) => {
+    process.on('unhandledRejection', (reason, _promise) => {
       logger.error('Unhandled Rejection:', reason);
       // Não sai do processo em produção, apenas loga
     });
@@ -310,7 +343,7 @@ class Server {
     process.on('uncaughtException', (error) => {
       logger.error('Uncaught Exception:', error);
       // Em produção, considere usar um process manager como PM2
-    process.exit(1);
+      process.exit(1);
     });
   }
 
@@ -331,13 +364,13 @@ class Server {
           // Fecha banco de dados
           await setupDatabase();
           logger.info('Conexões de banco encerradas');
-          
+
           // Fecha Redis
           await setupRedis();
           logger.info('Conexão Redis encerrada');
-          
+
           logger.info('Shutdown graceful concluído');
-    process.exit(0);
+          process.exit(0);
         } catch (error) {
           logger.error('Erro durante shutdown:', error);
           process.exit(1);
@@ -347,7 +380,7 @@ class Server {
       // Force exit após 30 segundos
       setTimeout(() => {
         logger.error('Forçando saída após timeout');
-  process.exit(1);
+        process.exit(1);
       }, 30000);
     };
 
@@ -362,7 +395,7 @@ class Server {
       logger.info(`🌟 Servidor rodando na porta ${env.PORT}`);
       logger.info(`📚 Documentação disponível em http://localhost:${env.PORT}/api-docs`);
       logger.info(`🏥 Health check disponível em http://localhost:${env.PORT}/health`);
-      
+
       if (env.NODE_ENV === 'development') {
         logger.info(`🔧 Modo de desenvolvimento ativo`);
       }
@@ -391,6 +424,6 @@ if (require.main === module) {
     logger.error('Falha ao iniciar servidor:', error);
     process.exit(1);
   });
-} 
+}
 
-export default server; 
+export default server;

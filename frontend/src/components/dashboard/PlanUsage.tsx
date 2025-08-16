@@ -74,8 +74,14 @@ const PlanUsage: React.FC = () => {
     );
   }
 
-  const analysesPercentage = calculatePercentage(limits.limits.analyses.used, limits.limits.analyses.max);
-  const reportsPercentage = calculatePercentage(limits.limits.reports.used, limits.limits.reports.max);
+  const analysesPercentage = calculatePercentage(
+    limits.limits.analyses.used,
+    limits.limits.analyses.max
+  );
+  const reportsPercentage = calculatePercentage(
+    limits.limits.reports.used,
+    limits.limits.reports.max
+  );
 
   return (
     <div className="bg-white rounded-lg shadow-sm p-6">
@@ -104,7 +110,8 @@ const PlanUsage: React.FC = () => {
               <span className="text-sm font-medium text-gray-700">Análises</span>
             </div>
             <span className="text-sm text-gray-600">
-              {limits.limits.analyses.used} / {limits.limits.analyses.max === 99999 ? '∞' : limits.limits.analyses.max}
+              {limits.limits.analyses.used} /{' '}
+              {limits.limits.analyses.max === 99999 ? '∞' : limits.limits.analyses.max}
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
@@ -129,7 +136,8 @@ const PlanUsage: React.FC = () => {
               <span className="text-sm font-medium text-gray-700">Relatórios</span>
             </div>
             <span className="text-sm text-gray-600">
-              {limits.limits.reports.used} / {limits.limits.reports.max === 99999 ? '∞' : limits.limits.reports.max}
+              {limits.limits.reports.used} /{' '}
+              {limits.limits.reports.max === 99999 ? '∞' : limits.limits.reports.max}
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">

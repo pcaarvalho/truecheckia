@@ -9,6 +9,14 @@ interface JwtPayload {
   role: string;
 }
 
+export interface ValidatedUser {
+  userId: string;
+  id: string;
+  email: string;
+  role: string;
+  plan?: string;
+}
+
 declare global {
   namespace Express {
     interface Request {
@@ -23,14 +31,10 @@ declare global {
   }
 }
 
-export const authenticateToken = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = authHeader?.split(' ')[1];
 
     if (!token) {
       logger.warn('Tentativa de acesso sem token de autorização');
@@ -44,7 +48,7 @@ export const authenticateToken = async (
     }
 
     const decoded = jwt.verify(token, secret) as JwtPayload;
-    
+
     // Verifica se o usuário ainda existe e está ativo
     const user = await prisma.user.findUnique({
       where: { id: decoded['userId'] },
@@ -52,8 +56,8 @@ export const authenticateToken = async (
         id: true,
         email: true,
         role: true,
-        isActive: true
-      }
+        isActive: true,
+      },
     });
 
     if (!user) {
@@ -70,7 +74,7 @@ export const authenticateToken = async (
       userId: user.id,
       id: user.id,
       email: user.email,
-      role: user.role
+      role: user.role,
     };
 
     logger.debug(`Usuário autenticado: ${user.email}`);
@@ -84,7 +88,7 @@ export const authenticateToken = async (
       logger.warn('Token expirado fornecido');
       return res.status(401).json({ error: 'Token expirado' });
     }
-    
+
     logger.error('Erro na autenticação:', error);
     return res.status(500).json({ error: 'Erro interno do servidor' });
   }
@@ -99,7 +103,7 @@ export const requireRole = (roles: string[]) => {
 
       const user = await prisma.user.findUnique({
         where: { id: req.user.id },
-        select: { role: true }
+        select: { role: true },
       });
 
       if (!user || !roles.includes(user.role)) {
@@ -131,9 +135,11 @@ export const requireOwnerOrAdmin = (req: Request, res: Response, next: NextFunct
   }
 
   const resourceUserId = req.params['userId'] || req.body['userId'];
-  
+
   if (req.user.role !== 'ADMIN' && req.user.id !== resourceUserId) {
-    return res.status(403).json({ error: 'Acesso negado. Você só pode acessar seus próprios recursos.' });
+    return res
+      .status(403)
+      .json({ error: 'Acesso negado. Você só pode acessar seus próprios recursos.' });
   }
 
   return next();
@@ -154,15 +160,15 @@ export const rateLimit = (maxRequests: number, windowMs: number) => {
     if (!userRequests || now > userRequests.resetTime) {
       requests.set(userId, {
         count: 1,
-        resetTime: now + windowMs
+        resetTime: now + windowMs,
       });
       return next();
     }
 
     if (userRequests.count >= maxRequests) {
-      return res.status(429).json({ 
+      return res.status(429).json({
         error: 'Muitas requisições. Tente novamente mais tarde.',
-        retryAfter: Math.ceil((userRequests.resetTime - now) / 1000)
+        retryAfter: Math.ceil((userRequests.resetTime - now) / 1000),
       });
     }
 
@@ -182,10 +188,10 @@ export const requireActivePlan = async (req: Request, res: Response, next: NextF
       include: {
         userPlan: {
           include: {
-            plan: true
-          }
-        }
-      }
+            plan: true,
+          },
+        },
+      },
     });
 
     if (!user) {
@@ -194,31 +200,35 @@ export const requireActivePlan = async (req: Request, res: Response, next: NextF
 
     // Se não tem plano, redireciona para seleção
     if (!user.userPlan) {
-      return res.status(402).json({ 
+      return res.status(402).json({
         error: 'Selecione um plano para continuar',
-        requiresPlanSelection: true
+        requiresPlanSelection: true,
       });
     }
 
     // Verifica status do plano
     if (user.userPlan.status === 'EXPIRED' || user.userPlan.status === 'CANCELLED') {
-      return res.status(403).json({ 
+      return res.status(403).json({
         error: 'Plano expirado ou cancelado. Renove seu plano para continuar.',
-        requiresPlanRenewal: true
+        requiresPlanRenewal: true,
       });
     }
 
     // Verifica trial expirado
-    if (user.userPlan.status === 'TRIAL' && user.userPlan.trialEndsAt && user.userPlan.trialEndsAt < new Date()) {
-      return res.status(402).json({ 
+    if (
+      user.userPlan.status === 'TRIAL' &&
+      user.userPlan.trialEndsAt &&
+      user.userPlan.trialEndsAt < new Date()
+    ) {
+      return res.status(402).json({
         error: 'Período de trial expirado. Selecione um plano pago para continuar.',
-        trialExpired: true
+        trialExpired: true,
       });
     }
 
     req.user = {
       ...req.user,
-      plan: user.userPlan.planType
+      plan: user.userPlan.planType,
     };
 
     return next();
@@ -238,14 +248,14 @@ export const checkPlanLimits = (feature: 'analyses' | 'reports' | 'fileSize' | '
       const userPlan = await prisma.userPlan.findUnique({
         where: { userId: req.user.id },
         include: {
-          plan: true
-        }
+          plan: true,
+        },
       });
 
       if (!userPlan) {
-        return res.status(402).json({ 
+        return res.status(402).json({
           error: 'Selecione um plano para continuar',
-          requiresPlanSelection: true
+          requiresPlanSelection: true,
         });
       }
 
@@ -255,22 +265,22 @@ export const checkPlanLimits = (feature: 'analyses' | 'reports' | 'fileSize' | '
       switch (feature) {
         case 'analyses':
           if (userPlan.analysesUsed >= plan.maxAnalyses) {
-            return res.status(403).json({ 
+            return res.status(403).json({
               error: `Limite de análises do plano ${plan.displayName} atingido (${plan.maxAnalyses}/mês)`,
               limit: plan.maxAnalyses,
               used: userPlan.analysesUsed,
-              upgradeRequired: true
+              upgradeRequired: true,
             });
           }
           break;
 
         case 'reports':
           if (userPlan.reportsUsed >= plan.maxReports) {
-            return res.status(403).json({ 
+            return res.status(403).json({
               error: `Limite de relatórios do plano ${plan.displayName} atingido (${plan.maxReports}/mês)`,
               limit: plan.maxReports,
               used: userPlan.reportsUsed,
-              upgradeRequired: true
+              upgradeRequired: true,
             });
           }
           break;
@@ -279,11 +289,11 @@ export const checkPlanLimits = (feature: 'analyses' | 'reports' | 'fileSize' | '
           // Verifica tamanho do arquivo no corpo da requisição
           const fileSizeMB = req.file ? req.file.size / (1024 * 1024) : 0;
           if (fileSizeMB > plan.maxFileSize) {
-            return res.status(403).json({ 
+            return res.status(403).json({
               error: `Arquivo muito grande. Limite do plano ${plan.displayName}: ${plan.maxFileSize}MB`,
               limit: plan.maxFileSize,
               fileSize: fileSizeMB,
-              upgradeRequired: true
+              upgradeRequired: true,
             });
           }
           break;
@@ -292,11 +302,11 @@ export const checkPlanLimits = (feature: 'analyses' | 'reports' | 'fileSize' | '
           // Verifica duração do vídeo (seria implementado após análise do arquivo)
           const videoLengthMinutes = req.body.videoLength || 0;
           if (videoLengthMinutes > plan.maxVideoLength) {
-            return res.status(403).json({ 
+            return res.status(403).json({
               error: `Vídeo muito longo. Limite do plano ${plan.displayName}: ${plan.maxVideoLength} minutos`,
               limit: plan.maxVideoLength,
               videoLength: videoLengthMinutes,
-              upgradeRequired: true
+              upgradeRequired: true,
             });
           }
           break;
@@ -305,19 +315,18 @@ export const checkPlanLimits = (feature: 'analyses' | 'reports' | 'fileSize' | '
       // Verifica se precisa resetar contadores mensais
       const now = new Date();
       const lastReset = new Date(userPlan.lastResetDate);
-      
+
       // Reset baseado em mudança de mês calendário, não em dias
-      const shouldReset = (
+      const shouldReset =
         now.getFullYear() > lastReset.getFullYear() ||
-        (now.getFullYear() === lastReset.getFullYear() && now.getMonth() > lastReset.getMonth())
-      );
+        (now.getFullYear() === lastReset.getFullYear() && now.getMonth() > lastReset.getMonth());
 
       if (shouldReset) {
         // Calcular início do mês atual para currentPeriodStart
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
         // Calcular final do mês atual para currentPeriodEnd
         const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-        
+
         await prisma.userPlan.update({
           where: { id: userPlan.id },
           data: {
@@ -325,8 +334,8 @@ export const checkPlanLimits = (feature: 'analyses' | 'reports' | 'fileSize' | '
             reportsUsed: 0,
             lastResetDate: now,
             currentPeriodStart: monthStart,
-            currentPeriodEnd: monthEnd
-          }
+            currentPeriodEnd: monthEnd,
+          },
         });
       }
 
@@ -342,7 +351,7 @@ export const checkPlanLimits = (feature: 'analyses' | 'reports' | 'fileSize' | '
 export const incrementPlanUsage = async (userId: string, resource: 'analyses' | 'reports') => {
   try {
     const userPlan = await prisma.userPlan.findUnique({
-      where: { userId }
+      where: { userId },
     });
 
     if (!userPlan) {
@@ -350,15 +359,65 @@ export const incrementPlanUsage = async (userId: string, resource: 'analyses' | 
       return;
     }
 
-    const updateData = resource === 'analyses' 
-      ? { analysesUsed: { increment: 1 } }
-      : { reportsUsed: { increment: 1 } };
+    const updateData =
+      resource === 'analyses'
+        ? { analysesUsed: { increment: 1 } }
+        : { reportsUsed: { increment: 1 } };
 
     await prisma.userPlan.update({
       where: { userId },
-      data: updateData
+      data: updateData,
     });
   } catch (error) {
     console.error(`Erro ao incrementar uso de ${resource}:`, error);
   }
 };
+
+// Função utilitária para validar tokens JWT (usada no WebSocket)
+export async function validateJwtToken(token: string): Promise<ValidatedUser | null> {
+  try {
+    const secret = process.env['JWT_SECRET'];
+    if (!secret) {
+      logger.error('JWT_SECRET não configurado');
+      return null;
+    }
+
+    const decoded = jwt.verify(token, secret) as JwtPayload;
+
+    // Verifica se o usuário ainda existe e está ativo
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+      },
+    });
+
+    if (!user) {
+      logger.warn(`Token válido mas usuário não encontrado: ${decoded.userId}`);
+      return null;
+    }
+
+    // Busca informações do plano do usuário
+    const userPlan = await prisma.userPlan.findUnique({
+      where: { userId: user.id },
+      include: { plan: true },
+    });
+
+    return {
+      userId: user.id,
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      plan: userPlan?.plan?.code,
+    };
+  } catch (error) {
+    if (error instanceof jwt.JsonWebTokenError) {
+      logger.warn('Token JWT inválido:', error.message);
+    } else {
+      logger.error('Erro ao validar token JWT:', error);
+    }
+    return null;
+  }
+}

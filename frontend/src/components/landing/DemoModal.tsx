@@ -16,14 +16,14 @@ const DemoModal: React.FC<DemoModalProps> = ({ isOpen, onClose }) => {
   } | null>(null);
 
   const sampleTexts = [
-    "A inteligência artificial revolucionou a forma como processamos informações, criando novas possibilidades para o futuro da tecnologia.",
-    "O desenvolvimento sustentável é fundamental para garantir um futuro melhor para as próximas gerações.",
-    "A transformação digital está redefinindo os paradigmas empresariais em todo o mundo."
+    'A inteligência artificial revolucionou a forma como processamos informações, criando novas possibilidades para o futuro da tecnologia.',
+    'O desenvolvimento sustentável é fundamental para garantir um futuro melhor para as próximas gerações.',
+    'A transformação digital está redefinindo os paradigmas empresariais em todo o mundo.',
   ];
 
   const handleDemo = async () => {
     if (!demoText.trim()) return;
-    
+
     setIsAnalyzing(true);
     setResult(null);
 
@@ -37,7 +37,7 @@ const DemoModal: React.FC<DemoModalProps> = ({ isOpen, onClose }) => {
     setResult({
       aiProbability,
       isAIGenerated,
-      confidence
+      confidence,
     });
     setIsAnalyzing(false);
   };
@@ -54,10 +54,7 @@ const DemoModal: React.FC<DemoModalProps> = ({ isOpen, onClose }) => {
         <div className="p-6 border-b border-slate-700">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-white">Demonstração da Plataforma</h2>
-            <button
-              onClick={onClose}
-              className="text-slate-400 hover:text-white transition-colors"
-            >
+            <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
               <X size={24} />
             </button>
           </div>
@@ -87,7 +84,7 @@ const DemoModal: React.FC<DemoModalProps> = ({ isOpen, onClose }) => {
             </label>
             <textarea
               value={demoText}
-              onChange={(e) => setDemoText(e.target.value)}
+              onChange={e => setDemoText(e.target.value)}
               placeholder="Cole aqui o texto que deseja analisar..."
               className="w-full h-32 p-4 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
             />
@@ -116,19 +113,24 @@ const DemoModal: React.FC<DemoModalProps> = ({ isOpen, onClose }) => {
           {result && (
             <div className="p-6 bg-slate-700/30 rounded-lg border border-slate-600">
               <h3 className="text-lg font-semibold text-white mb-4">Resultado da Análise</h3>
-              
+
               <div className="space-y-4">
                 {/* Probabilidade de IA */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-slate-300">Probabilidade de IA</span>
-                    <span className="text-white font-semibold">{result.aiProbability.toFixed(1)}%</span>
+                    <span className="text-white font-semibold">
+                      {result.aiProbability.toFixed(1)}%
+                    </span>
                   </div>
                   <div className="w-full bg-slate-600 rounded-full h-2">
                     <div
                       className={`h-2 rounded-full transition-all duration-1000 ${
-                        result.aiProbability > 70 ? 'bg-red-500' :
-                        result.aiProbability > 40 ? 'bg-yellow-500' : 'bg-green-500'
+                        result.aiProbability > 70
+                          ? 'bg-red-500'
+                          : result.aiProbability > 40
+                            ? 'bg-yellow-500'
+                            : 'bg-green-500'
                       }`}
                       style={{ width: `${result.aiProbability}%` }}
                     />
@@ -142,9 +144,11 @@ const DemoModal: React.FC<DemoModalProps> = ({ isOpen, onClose }) => {
                   ) : (
                     <CheckCircle className="w-6 h-6 text-green-400" />
                   )}
-                  <span className={`font-semibold ${
-                    result.isAIGenerated ? 'text-red-400' : 'text-green-400'
-                  }`}>
+                  <span
+                    className={`font-semibold ${
+                      result.isAIGenerated ? 'text-red-400' : 'text-green-400'
+                    }`}
+                  >
                     {result.isAIGenerated ? 'Provavelmente gerado por IA' : 'Provavelmente humano'}
                   </span>
                 </div>
@@ -167,4 +171,4 @@ const DemoModal: React.FC<DemoModalProps> = ({ isOpen, onClose }) => {
   );
 };
 
-export default DemoModal; 
+export default DemoModal;

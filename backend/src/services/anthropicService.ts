@@ -38,25 +38,25 @@ export class AnthropicService {
 
   async analyzeText(textContent: string, title?: string): Promise<AnthropicAnalysisResult> {
     const startTime = Date.now();
-    
+
     // Se não há chave da API válida, usa análise mock
     if (!this.apiKey || this.apiKey === 'your-anthropic-api-key-here' || this.apiKey.length < 10) {
       logger.warn('⚠️ Chave da API do Anthropic não configurada ou inválida, usando análise mock');
       logger.info('💡 Para usar análise real, configure ANTHROPIC_API_KEY no arquivo .env');
       return this.mockAnalysis(textContent, title, startTime);
     }
-    
+
     try {
       logger.info(`🔍 Iniciando análise com Claude 3 Haiku: ${title || 'Sem título'}`);
 
       const prompt = this.buildAnalysisPrompt(textContent, title);
-      
+
       const response = await fetch(this.baseUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': this.apiKey,
-          'anthropic-version': '2023-06-01'
+          'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
           model: this.model,
@@ -64,29 +64,29 @@ export class AnthropicService {
           messages: [
             {
               role: 'user',
-              content: prompt
-            }
-          ]
-        })
+              content: prompt,
+            },
+          ],
+        }),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
         logger.error(`❌ Erro na API da Anthropic: ${response.status} - ${errorText}`);
-        
+
         // Fallback para análise mock em caso de erro
         logger.warn('Usando análise mock como fallback');
         return this.mockAnalysis(textContent, title, startTime);
       }
 
-      const data = await response.json() as AnthropicResponse;
+      const data = (await response.json()) as AnthropicResponse;
       const analysisText = data.content[0]?.text || '';
-      
+
       // Parse da resposta da IA
       const analysis = this.parseAnalysisResponse(analysisText);
-      
+
       const processingTime = Date.now() - startTime;
-      
+
       logger.info(`✅ Análise Claude 3 Haiku concluída em ${processingTime}ms`);
 
       return {
@@ -99,40 +99,46 @@ export class AnthropicService {
           processingTime,
           model: this.model,
           tokensUsed: (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0),
-          analysis: analysisText
-        }
+          analysis: analysisText,
+        },
       };
-
     } catch (error) {
       logger.error(`❌ Erro ao analisar texto com Claude 3 Haiku:`, error);
-      
+
       // Fallback para análise mock em caso de erro
       logger.warn('Usando análise mock como fallback');
       return this.mockAnalysis(textContent, title, startTime);
     }
   }
 
-  private mockAnalysis(textContent: string, _title: string | undefined, startTime: number): AnthropicAnalysisResult {
+  private mockAnalysis(
+    textContent: string,
+    _title: string | undefined,
+    startTime: number
+  ): AnthropicAnalysisResult {
     const processingTime = Date.now() - startTime + Math.random() * 1000;
-    
+
     // Análise mock baseada em características do texto
     const words = textContent.split(/\s+/).length;
     const hasRepetition = /(.{10,})\1/.test(textContent);
-    const hasFormalLanguage = /portanto|ademais|consequentemente|outrossim/.test(textContent.toLowerCase());
-    
+    const hasFormalLanguage = /portanto|ademais|consequentemente|outrossim/.test(
+      textContent.toLowerCase()
+    );
+
     let confidence = 50;
     let isAIGenerated = false;
     let response = 'Análise mock realizada';
-    
+
     if (words > 100) confidence += 10;
     if (hasRepetition) confidence += 20;
     if (hasFormalLanguage) confidence += 15;
-    
+
     isAIGenerated = confidence > 70;
     confidence = Math.min(95, confidence + Math.random() * 10);
-    
+
     if (isAIGenerated) {
-      response = 'O texto apresenta características típicas de conteúdo gerado por IA, como estrutura repetitiva e linguagem muito formal.';
+      response =
+        'O texto apresenta características típicas de conteúdo gerado por IA, como estrutura repetitiva e linguagem muito formal.';
     } else {
       response = 'O texto parece ter sido escrito por um humano, com variações naturais no estilo.';
     }
@@ -150,8 +156,8 @@ export class AnthropicService {
         model: 'mock-analysis-v1',
         tokensUsed: Math.round(words * 1.2),
         analysis: `Análise mock: ${words} palavras, repetição: ${hasRepetition}, linguagem formal: ${hasFormalLanguage}`,
-        wordCount: words
-      }
+        wordCount: words,
+      },
     };
   }
 
@@ -196,27 +202,28 @@ IMPORTANTE: Responda APENAS com o JSON válido, sem texto adicional.`;
         return {
           confidence: parsed.confidence || 50.0,
           isAIGenerated: parsed.isAIGenerated || false,
-          response: parsed.response || 'Análise concluída'
+          response: parsed.response || 'Análise concluída',
         };
       }
-      
+
       // Fallback se não conseguir extrair JSON
       logger.warn('Não foi possível extrair JSON da resposta da IA, usando fallback');
       return {
         confidence: 75.0,
-        isAIGenerated: responseText.toLowerCase().includes('ia') || responseText.toLowerCase().includes('artificial'),
-        response: 'Análise concluída com Claude 3 Haiku'
+        isAIGenerated:
+          responseText.toLowerCase().includes('ia') ||
+          responseText.toLowerCase().includes('artificial'),
+        response: 'Análise concluída com Claude 3 Haiku',
       };
-      
     } catch (error) {
       logger.error('Erro ao fazer parse da resposta da IA:', error);
       return {
         confidence: 50.0,
         isAIGenerated: false,
-        response: 'Erro na análise'
+        response: 'Erro na análise',
       };
     }
   }
 }
 
-export const anthropicService = AnthropicService.getInstance(); 
+export const anthropicService = AnthropicService.getInstance();

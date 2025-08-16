@@ -9,7 +9,7 @@ const prisma = new PrismaClient();
 
 // Schema de validação
 const selectPlanSchema = z.object({
-  planId: z.string().min(1, 'Plan ID é obrigatório')
+  planId: z.string().min(1, 'Plan ID é obrigatório'),
 });
 
 // Buscar todos os planos disponíveis
@@ -29,25 +29,25 @@ router.get('/available', async (req: Request, res: Response) => {
         maxFileSize: true,
         maxVideoLength: true,
         maxReports: true,
-        features: true
-      }
+        features: true,
+      },
     });
 
     // Parse features JSON
-    const plansWithFeatures = plans.map(plan => ({
+    const plansWithFeatures = plans.map((plan) => ({
       ...plan,
-      features: JSON.parse(plan.features)
+      features: JSON.parse(plan.features),
     }));
 
     res.json({
       success: true,
-      data: plansWithFeatures
+      data: plansWithFeatures,
     });
   } catch (error) {
     console.error('Erro ao buscar planos:', error);
     res.status(500).json({
       success: false,
-      message: 'Erro ao buscar planos disponíveis'
+      message: 'Erro ao buscar planos disponíveis',
     });
   }
 });
@@ -64,26 +64,26 @@ router.get('/current', authenticateToken, async (req: Request, res: Response) =>
         subscriptions: {
           where: { status: 'ACTIVE' },
           orderBy: { createdAt: 'desc' },
-          take: 1
-        }
-      }
+          take: 1,
+        },
+      },
     });
 
     if (!userPlan) {
       return res.status(404).json({
         success: false,
-        message: 'Plano não encontrado'
+        message: 'Plano não encontrado',
       });
     }
 
     // Calcular uso
     const usagePercentage = {
-      analyses: userPlan.plan.maxAnalyses > 0 
-        ? (userPlan.analysesUsed / userPlan.plan.maxAnalyses) * 100 
-        : 0,
-      reports: userPlan.plan.maxReports > 0 
-        ? (userPlan.reportsUsed / userPlan.plan.maxReports) * 100 
-        : 0
+      analyses:
+        userPlan.plan.maxAnalyses > 0
+          ? (userPlan.analysesUsed / userPlan.plan.maxAnalyses) * 100
+          : 0,
+      reports:
+        userPlan.plan.maxReports > 0 ? (userPlan.reportsUsed / userPlan.plan.maxReports) * 100 : 0,
     };
 
     res.json({
@@ -92,28 +92,28 @@ router.get('/current', authenticateToken, async (req: Request, res: Response) =>
         ...userPlan,
         plan: {
           ...userPlan.plan,
-          features: JSON.parse(userPlan.plan.features)
+          features: JSON.parse(userPlan.plan.features),
         },
         usage: {
           analyses: {
             used: userPlan.analysesUsed,
             max: userPlan.plan.maxAnalyses,
-            percentage: usagePercentage.analyses
+            percentage: usagePercentage.analyses,
           },
           reports: {
             used: userPlan.reportsUsed,
             max: userPlan.plan.maxReports,
-            percentage: usagePercentage.reports
-          }
+            percentage: usagePercentage.reports,
+          },
         },
-        hasActiveSubscription: userPlan.subscriptions.length > 0
-      }
+        hasActiveSubscription: userPlan.subscriptions.length > 0,
+      },
     });
   } catch (error) {
     console.error('Erro ao buscar plano atual:', error);
     res.status(500).json({
       success: false,
-      message: 'Erro ao buscar plano atual'
+      message: 'Erro ao buscar plano atual',
     });
   }
 });
@@ -126,19 +126,19 @@ router.post('/select', authenticateToken, async (req: Request, res: Response) =>
 
     // Buscar plano selecionado
     const selectedPlan = await prisma.plan.findUnique({
-      where: { id: planId }
+      where: { id: planId },
     });
 
     if (!selectedPlan || !selectedPlan.isActive) {
       return res.status(404).json({
         success: false,
-        message: 'Plano não encontrado ou inativo'
+        message: 'Plano não encontrado ou inativo',
       });
     }
 
     // Verificar se usuário já tem um plano
     const existingUserPlan = await prisma.userPlan.findUnique({
-      where: { userId }
+      where: { userId },
     });
 
     let userPlan;
@@ -148,9 +148,10 @@ router.post('/select', authenticateToken, async (req: Request, res: Response) =>
     if (selectedPlan.price > 0 && existingUserPlan?.isTrialUsed) {
       return res.status(400).json({
         success: false,
-        message: 'Você já utilizou seu período de trial. Para acessar este plano, é necessário realizar o pagamento.',
+        message:
+          'Você já utilizou seu período de trial. Para acessar este plano, é necessário realizar o pagamento.',
         requiresPayment: true,
-        trialDays: 0
+        trialDays: 0,
       });
     }
 
@@ -162,17 +163,17 @@ router.post('/select', authenticateToken, async (req: Request, res: Response) =>
           planId: selectedPlan.id,
           planType: selectedPlan.name,
           status: selectedPlan.price === 0 ? 'ACTIVE' : 'TRIAL',
-          trialEndsAt: selectedPlan.price > 0 && !existingUserPlan.isTrialUsed 
-            ? new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) // 7 dias de trial
-            : existingUserPlan.trialEndsAt,
+          trialEndsAt:
+            selectedPlan.price > 0 && !existingUserPlan.isTrialUsed
+              ? new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) // 7 dias de trial
+              : existingUserPlan.trialEndsAt,
           isTrialUsed: selectedPlan.price > 0 ? true : existingUserPlan.isTrialUsed,
           currentPeriodStart: now,
-          currentPeriodEnd: selectedPlan.price === 0 
-            ? null 
-            : new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000), // 30 dias
+          currentPeriodEnd:
+            selectedPlan.price === 0 ? null : new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000), // 30 dias
           analysesUsed: 0, // Reset contadores ao mudar de plano
-          reportsUsed: 0
-        }
+          reportsUsed: 0,
+        },
       });
     } else {
       // Criar novo plano para o usuário
@@ -182,17 +183,17 @@ router.post('/select', authenticateToken, async (req: Request, res: Response) =>
           planId: selectedPlan.id,
           planType: selectedPlan.name,
           status: selectedPlan.price === 0 ? 'ACTIVE' : 'TRIAL',
-          trialEndsAt: selectedPlan.price > 0 
-            ? new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) // 7 dias de trial
-            : null,
+          trialEndsAt:
+            selectedPlan.price > 0
+              ? new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) // 7 dias de trial
+              : null,
           isTrialUsed: selectedPlan.price > 0,
           currentPeriodStart: now,
-          currentPeriodEnd: selectedPlan.price === 0 
-            ? null 
-            : new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000), // 30 dias
+          currentPeriodEnd:
+            selectedPlan.price === 0 ? null : new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000), // 30 dias
           analysesUsed: 0,
-          reportsUsed: 0
-        }
+          reportsUsed: 0,
+        },
       });
     }
 
@@ -203,8 +204,8 @@ router.post('/select', authenticateToken, async (req: Request, res: Response) =>
         where: {
           userId,
           planId: selectedPlan.id,
-          status: 'PENDING'
-        }
+          status: 'PENDING',
+        },
       });
 
       if (!existingPendingSubscription) {
@@ -217,8 +218,8 @@ router.post('/select', authenticateToken, async (req: Request, res: Response) =>
             amount: selectedPlan.price,
             currency: selectedPlan.currency,
             interval: 'MONTHLY',
-            startDate: userPlan.trialEndsAt || now
-          }
+            startDate: userPlan.trialEndsAt || now,
+          },
         });
       }
     }
@@ -227,26 +228,27 @@ router.post('/select', authenticateToken, async (req: Request, res: Response) =>
       success: true,
       data: {
         userPlan,
-        message: selectedPlan.price === 0 
-          ? 'Plano gratuito ativado com sucesso!' 
-          : 'Período de trial de 7 dias iniciado!',
+        message:
+          selectedPlan.price === 0
+            ? 'Plano gratuito ativado com sucesso!'
+            : 'Período de trial de 7 dias iniciado!',
         requiresPayment: selectedPlan.price > 0,
-        trialDays: selectedPlan.price > 0 ? 7 : 0
-      }
+        trialDays: selectedPlan.price > 0 ? 7 : 0,
+      },
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
         message: 'Dados inválidos',
-        errors: error.errors
+        errors: error.errors,
       });
     }
 
     console.error('Erro ao selecionar plano:', error);
     res.status(500).json({
       success: false,
-      message: 'Erro ao selecionar plano'
+      message: 'Erro ao selecionar plano',
     });
   }
 });
@@ -258,32 +260,31 @@ router.get('/check-limits', authenticateToken, async (req: Request, res: Respons
 
     const userPlan = await prisma.userPlan.findUnique({
       where: { userId },
-      include: { plan: true }
+      include: { plan: true },
     });
 
     if (!userPlan) {
       return res.status(404).json({
         success: false,
-        message: 'Plano não encontrado'
+        message: 'Plano não encontrado',
       });
     }
 
     // Verificar se precisa resetar contadores (mensal)
     const now = new Date();
     const lastReset = new Date(userPlan.lastResetDate);
-    
+
     // Reset baseado em mudança de mês calendário, não em dias
-    const shouldReset = (
+    const shouldReset =
       now.getFullYear() > lastReset.getFullYear() ||
-      (now.getFullYear() === lastReset.getFullYear() && now.getMonth() > lastReset.getMonth())
-    );
+      (now.getFullYear() === lastReset.getFullYear() && now.getMonth() > lastReset.getMonth());
 
     if (shouldReset) {
       // Calcular início do mês atual para currentPeriodStart
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
       // Calcular final do mês atual para currentPeriodEnd
       const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-      
+
       await prisma.userPlan.update({
         where: { userId },
         data: {
@@ -291,8 +292,8 @@ router.get('/check-limits', authenticateToken, async (req: Request, res: Respons
           reportsUsed: 0,
           lastResetDate: now,
           currentPeriodStart: monthStart,
-          currentPeriodEnd: monthEnd
-        }
+          currentPeriodEnd: monthEnd,
+        },
       });
 
       userPlan.analysesUsed = 0;
@@ -311,24 +312,24 @@ router.get('/check-limits', authenticateToken, async (req: Request, res: Respons
           analyses: {
             used: userPlan.analysesUsed,
             max: userPlan.plan.maxAnalyses,
-            remaining: userPlan.plan.maxAnalyses - userPlan.analysesUsed
+            remaining: userPlan.plan.maxAnalyses - userPlan.analysesUsed,
           },
           reports: {
             used: userPlan.reportsUsed,
             max: userPlan.plan.maxReports,
-            remaining: userPlan.plan.maxReports - userPlan.reportsUsed
+            remaining: userPlan.plan.maxReports - userPlan.reportsUsed,
           },
           fileSize: userPlan.plan.maxFileSize,
-          videoLength: userPlan.plan.maxVideoLength
+          videoLength: userPlan.plan.maxVideoLength,
         },
-        resetDate: new Date(lastReset.getTime() + 30 * 24 * 60 * 60 * 1000)
-      }
+        resetDate: new Date(lastReset.getTime() + 30 * 24 * 60 * 60 * 1000),
+      },
     });
   } catch (error) {
     console.error('Erro ao verificar limites:', error);
     res.status(500).json({
       success: false,
-      message: 'Erro ao verificar limites do plano'
+      message: 'Erro ao verificar limites do plano',
     });
   }
 });

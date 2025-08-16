@@ -25,35 +25,35 @@ export class InputValidator {
     if (!text || typeof text !== 'string') {
       throw new Error('Invalid text input');
     }
-    
+
     if (text.trim().length === 0) {
       throw new Error('Text cannot be empty');
     }
-    
+
     if (text.length > maxLength) {
       throw new Error(`Text exceeds maximum length of ${maxLength} characters`);
     }
   }
-  
+
   static validateVideoUrl(url: string): void {
     if (!url || typeof url !== 'string') {
       throw new Error('Invalid video URL');
     }
-    
+
     try {
       new URL(url);
     } catch {
       throw new Error('Invalid URL format');
     }
-    
+
     const validExtensions = ['.mp4', '.avi', '.mov', '.mkv', '.webm'];
-    const hasValidExtension = validExtensions.some(ext => url.toLowerCase().includes(ext));
-    
+    const hasValidExtension = validExtensions.some((ext) => url.toLowerCase().includes(ext));
+
     if (!hasValidExtension) {
       throw new Error('Invalid video file format');
     }
   }
-  
+
   static sanitizeInput(input: string): string {
     return input
       .trim()

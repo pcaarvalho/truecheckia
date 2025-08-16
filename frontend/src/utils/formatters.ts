@@ -12,12 +12,12 @@ export const formatPrice = (value: number, currency: string = 'R$') => {
   // Usar toFixed(2) para garantir exatamente 2 casas decimais
   const fixedValue = value.toFixed(2);
   const [integerPart, decimalPart] = fixedValue.split('.');
-  
+
   return {
     currency,
     integer: integerPart,
     decimal: decimalPart,
-    full: `${currency} ${integerPart},${decimalPart}`
+    full: `${currency} ${integerPart},${decimalPart}`,
   };
 };
 
@@ -39,8 +39,8 @@ export const formatCurrency = (value: number, currency: string = 'R$'): string =
  * @returns String formatada usando Intl
  */
 export const formatCurrencyIntl = (
-  value: number, 
-  locale: string = 'pt-BR', 
+  value: number,
+  locale: string = 'pt-BR',
   currency: string = 'BRL'
 ): string => {
   return new Intl.NumberFormat(locale, {

@@ -1,0 +1,208 @@
+name: Deploy to Environments
+
+on:
+  workflow_run:
+    workflows: ["TrueCheckIA CI/CD Pipeline"]
+    types:
+      - completed
+    branches:
+      - main
+      - staging
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  # =============================================================================
+  # DEPLOY TO STAGING
+  # =============================================================================
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    if: |
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'staging'
+    environment: staging
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ secrets.STAGING_SSH_KEY }}
+
+    - name: Deploy to staging server
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} '
+          cd /opt/truecheckia &&
+          git pull origin staging &&
+          docker-compose -f docker-compose.staging.yml pull &&
+          docker-compose -f docker-compose.staging.yml down &&
+          docker-compose -f docker-compose.staging.yml up -d &&
+          docker system prune -f
+        '
+
+    - name: Health check
+      run: |
+        sleep 60
+        curl -f ${{ secrets.STAGING_URL }}/health || exit 1
+        curl -f ${{ secrets.STAGING_URL }}/api/health || exit 1
+
+    - name: Run smoke tests
+      run: |
+        echo "Running staging smoke tests..."
+        # Adicione testes específicos aqui
+
+    - name: Notify staging deployment
+      uses: 8398a7/action-slack@v3
+      if: always()
+      with:
+        status: ${{ job.status }}
+        text: |
+          🚧 Staging deployment ${{ job.status }}!
+          Branch: ${{ github.event.workflow_run.head_branch }}
+          Commit: ${{ github.event.workflow_run.head_sha }}
+          URL: ${{ secrets.STAGING_URL }}
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+  # =============================================================================
+  # DEPLOY TO PRODUCTION
+  # =============================================================================
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    if: |
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
+    environment: production
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ secrets.PRODUCTION_SSH_KEY }}
+
+    - name: Create backup
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_HOST }} '
+          cd /opt/truecheckia &&
+          docker-compose -f docker-compose.prod.yml exec -T postgres pg_dump -U $POSTGRES_USER $POSTGRES_DB > backup-$(date +%Y%m%d-%H%M%S).sql
+        '
+
+    - name: Deploy to production server
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_HOST }} '
+          cd /opt/truecheckia &&
+          git pull origin main &&
+          docker-compose -f docker-compose.prod.yml pull &&
+          docker-compose -f docker-compose.prod.yml down &&
+          docker-compose -f docker-compose.prod.yml up -d &&
+          docker system prune -f
+        '
+
+    - name: Health check
+      run: |
+        sleep 90
+        curl -f ${{ secrets.PRODUCTION_URL }}/health || exit 1
+        curl -f ${{ secrets.PRODUCTION_URL }}/api/health || exit 1
+
+    - name: Run post-deployment tests
+      run: |
+        echo "Running production smoke tests..."
+        # Testes críticos de produção
+        curl -f ${{ secrets.PRODUCTION_URL }}/api-docs || exit 1
+
+    - name: Notify production deployment success
+      if: success()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: success
+        text: |
+          🚀 Production deployment successful!
+          Branch: main
+          Commit: ${{ github.event.workflow_run.head_sha }}
+          URL: ${{ secrets.PRODUCTION_URL }}
+          
+          ✅ All health checks passed
+          ✅ Database backup created
+          ✅ Smoke tests successful
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+    - name: Notify production deployment failure
+      if: failure()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        text: |
+          ❌ Production deployment failed!
+          Branch: main
+          Commit: ${{ github.event.workflow_run.head_sha }}
+          
+          Please check the deployment logs and consider rolling back.
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+  # =============================================================================
+  # ROLLBACK CAPABILITY
+  # =============================================================================
+  rollback-production:
+    name: Rollback Production
+    runs-on: ubuntu-latest
+    if: failure() && github.ref == 'refs/heads/main'
+    environment: production
+    needs: deploy-production
+
+    steps:
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ secrets.PRODUCTION_SSH_KEY }}
+
+    - name: Rollback to previous version
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_HOST }} '
+          cd /opt/truecheckia &&
+          git reset --hard HEAD~1 &&
+          docker-compose -f docker-compose.prod.yml down &&
+          docker-compose -f docker-compose.prod.yml up -d
+        '
+
+    - name: Verify rollback
+      run: |
+        sleep 60
+        curl -f ${{ secrets.PRODUCTION_URL }}/health || exit 1
+
+    - name: Notify rollback
+      uses: 8398a7/action-slack@v3
+      with:
+        status: custom
+        custom_payload: |
+          {
+            "text": "🔄 Production rollback completed",
+            "attachments": [
+              {
+                "color": "warning",
+                "fields": [
+                  {
+                    "title": "Status",
+                    "value": "Rolled back to previous version",
+                    "short": true
+                  },
+                  {
+                    "title": "URL",
+                    "value": "${{ secrets.PRODUCTION_URL }}",
+                    "short": true
+                  }
+                ]
+              }
+            ]
+          }
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}

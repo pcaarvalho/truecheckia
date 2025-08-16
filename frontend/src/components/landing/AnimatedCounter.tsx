@@ -13,7 +13,7 @@ const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
   duration = 2000,
   suffix = '',
   prefix = '',
-  className = ''
+  className = '',
 }) => {
   const [count, setCount] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
@@ -45,11 +45,11 @@ const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
     const animate = (timestamp: number) => {
       if (!startTime) startTime = timestamp;
       const progress = Math.min((timestamp - startTime) / duration, 1);
-      
+
       // Easing function (ease-out)
       const easeOut = 1 - Math.pow(1 - progress, 3);
       const currentCount = Math.floor(end * easeOut);
-      
+
       setCount(currentCount);
 
       if (progress < 1) {
@@ -77,9 +77,11 @@ const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
 
   return (
     <div ref={ref} className={className}>
-      {prefix}{formatNumber(count)}{suffix}
+      {prefix}
+      {formatNumber(count)}
+      {suffix}
     </div>
   );
 };
 
-export default AnimatedCounter; 
+export default AnimatedCounter;

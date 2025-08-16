@@ -12,22 +12,22 @@ export const api = axios.create({
 
 // Interceptor para adicionar token de autorização
 api.interceptors.request.use(
-  (config) => {
+  config => {
     const token = localStorage.getItem('accessToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => {
+  error => {
     return Promise.reject(error);
   }
 );
 
 // Interceptor para tratar erros de resposta
 api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
+  response => response,
+  async error => {
     const originalRequest = error.config;
 
     // Se o erro for 401 e não for uma tentativa de refresh
@@ -37,10 +37,7 @@ api.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem('refreshToken');
         if (refreshToken) {
-          const response = await axios.post(
-            `${API_BASE_URL}/api/auth/refresh`,
-            { refreshToken }
-          );
+          const response = await axios.post(`${API_BASE_URL}/api/auth/refresh`, { refreshToken });
 
           const { accessToken } = response.data;
           localStorage.setItem('accessToken', accessToken);
@@ -89,15 +86,13 @@ export interface AnalysisResult {
 
 // Serviços específicos
 export const authService = {
-  login: (email: string, password: string) =>
-    api.post('/api/auth/login', { email, password }),
-  
+  login: (email: string, password: string) => api.post('/api/auth/login', { email, password }),
+
   register: (name: string, email: string, password: string) =>
     api.post('/api/auth/register', { name, email, password }),
-  
-  refresh: (refreshToken: string) =>
-    api.post('/api/auth/refresh', { refreshToken }),
-  
+
+  refresh: (refreshToken: string) => api.post('/api/auth/refresh', { refreshToken }),
+
   logout: () => api.post('/api/auth/logout'),
 
   me: () => api.get('/api/auth/me'),
@@ -106,48 +101,50 @@ export const authService = {
 
   // Métodos genéricos para facilitar uso
   get: (url: string, config?: any) => api.get(url, config),
-  
+
   post: (url: string, data?: any, config?: any) => api.post(url, data, config),
-  
+
   put: (url: string, data?: any, config?: any) => api.put(url, data, config),
-  
+
   delete: (url: string, config?: any) => api.delete(url, config),
 };
 
 export const analysisService = {
   // Análise direta de texto (síncrona)
-  analyzeText: (data: { textContent: string; title?: string; description?: string }): Promise<{ data: AnalysisResult }> =>
-    api.post('/api/analysis/text', data),
+  analyzeText: (data: {
+    textContent: string;
+    title?: string;
+    description?: string;
+  }): Promise<{ data: AnalysisResult }> => api.post('/api/analysis/text', data),
 
   // Análise assíncrona (para uploads)
   create: (data: { title?: string; description?: string; textContent?: string }) =>
     api.post('/api/analysis', data),
-  
+
   upload: (file: File, data: { title?: string; description?: string }) => {
     const formData = new FormData();
     formData.append('file', file);
     if (data.title) formData.append('title', data.title);
     if (data.description) formData.append('description', data.description);
-    
+
     return api.post('/api/analysis/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
-  
+
   list: (params?: { page?: number; limit?: number; status?: string }) =>
     api.get('/api/analysis', { params }),
-  
+
   get: (id: string) => api.get(`/api/analysis/${id}`),
-  
+
   delete: (id: string) => api.delete(`/api/analysis/${id}`),
 };
 
 export const userService = {
   getProfile: () => api.get('/api/user/profile'),
-  
-  updateProfile: (data: { name?: string; email?: string }) =>
-    api.put('/api/user/profile', data),
-  
+
+  updateProfile: (data: { name?: string; email?: string }) => api.put('/api/user/profile', data),
+
   changePassword: (data: { currentPassword: string; newPassword: string }) =>
     api.put('/api/user/password', data),
 
@@ -157,14 +154,13 @@ export const userService = {
 export const reportService = {
   create: (data: { title: string; analysisId?: string; type: string }) =>
     api.post('/api/reports', data),
-  
-  list: (params?: { page?: number; limit?: number }) =>
-    api.get('/api/reports', { params }),
-  
+
+  list: (params?: { page?: number; limit?: number }) => api.get('/api/reports', { params }),
+
   get: (id: string) => api.get(`/api/reports/${id}`),
-  
+
   delete: (id: string) => api.delete(`/api/reports/${id}`),
 
-  export: (id: string, format: string = 'pdf') => 
+  export: (id: string, format: string = 'pdf') =>
     api.get(`/api/reports/${id}/export`, { params: { format } }),
-}; 
+};
